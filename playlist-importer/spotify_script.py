@@ -2,6 +2,7 @@ import os
 import tekore as tk
 import csv
 
+from httpx import ConnectError
 from tekore import RefreshingToken, Spotify
 from tekore.model import FullPlaylist, PrivateUser, SimplePlaylistPaging
 
@@ -62,16 +63,30 @@ def obtener_servicio() -> Spotify:
     return tk.Spotify(generar_token())
 
 
-def obtener_usuario_actual(servicio: Spotify) -> PrivateUser:
+def obtener_usuario_actual(servicio: Spotify) -> dict:
 
     usuario: PrivateUser = None
+    usuario_formateado: dict = dict()
 
     try:
         usuario = servicio.current_user()
-    except tk.HTTPError:
-        print(f'Un error ocurrió: {tk.HTTPError}') 
+    except tk.HTTPError as err:
+        print(f'Un error ocurrió con la petición: {err}')
+    except ConnectError as err:
+        print(f'Un error ocurrió con la conexión a internet: {err}')
+    except Exception as err:
+        print(f'Un error ocurrió: {err}')
 
-    return usuario
+    if usuario:
+        usuario_formateado = {
+            'id': usuario.id,
+            'usuario': usuario.display_name,
+            'email': usuario.email,
+            'href': usuario.external_urls.get('spotify', str()),
+            'uri': usuario.uri
+        }
+
+    return usuario_formateado
 
 
 def obtener_playlists(servicio: Spotify, id_usuario: str) -> SimplePlaylistPaging:
@@ -126,8 +141,11 @@ def crear_playlist(servicio: Spotify, id_usuario: str,
     return playlist.id
 
 
-current_user = spotify.current_user()
+spotify = obtener_servicio()
 
+current_user = obtener_usuario_actual(spotify)
+
+print(current_user)
 
 # playlists = spotify.playlists(current_user.id)
 
