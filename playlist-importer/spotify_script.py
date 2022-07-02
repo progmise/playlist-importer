@@ -179,17 +179,46 @@ def crear_playlist(servicio: Spotify, id_usuario: str,
     return playlist_creada
 
 
+def agregar_canciones_a_playlist(servicio: Spotify, 
+                                 id_playlist: str, uris: list) -> bool:
+
+    id_snapshot_de_playlist: str = str()
+    se_actualizo_playlist: bool = False
+
+    try:
+        id_snapshot_de_playlist = servicio.playlist_add(
+            playlist_id=id_playlist,
+            uris=uris,
+        )
+    except tk.HTTPError as err:
+        print(f'Un error ocurrió con la petición: {err}')
+    except ConnectError as err:
+        print(f'Un error ocurrió con la conexión a internet: {err}')
+    except Exception as err:
+        print(f'Un error ocurrió: {err}')
+
+    if id_snapshot_de_playlist:
+        se_actualizo_playlist = True
+
+    return se_actualizo_playlist
+
+
 spotify = obtener_servicio()
 
 usuario = obtener_usuario_actual(spotify)
 
-# playlists = obtener_playlists(spotify, usuario.get('id', ''))
+playlists = obtener_playlists(spotify, usuario.get('id', ''))
 
-# playlist = obtener_playlist(spotify, playlists[1].get('id', ''))
+playlist = obtener_playlist(spotify, playlists[2].get('id', ''))
 
-playlist_creada = crear_playlist(spotify, usuario.get('id', ''), 'Prueba3', 'Una descripción')
+# playlist_creada = crear_playlist(spotify, usuario.get('id', ''), 'Prueba3', 'Una descripción')
 
-print(playlist_creada)
+id_playlist = agregar_canciones_a_playlist(spotify, playlists[2].get('id', ''), [
+    playlist[0].get('uri', ''),
+    playlist[1].get('uri', '')
+])
+
+print(id_playlist)
 
 # playlists = spotify.playlists(current_user.id)
 
