@@ -1,10 +1,9 @@
 import os
 import tekore as tk
-import csv
 
 from httpx import ConnectError
 from tekore import RefreshingToken, Spotify
-from tekore.model import FullPlaylist, PrivateUser, SimplePlaylistPaging
+from tekore.model import FullPlaylist, FullTrackPaging, PrivateUser, SimplePlaylistPaging
 
 
 CLIENT_ID = '6390fd98ea7e4ad791d81538a49f9aab'
@@ -87,6 +86,39 @@ def obtener_usuario_actual(servicio: Spotify) -> dict:
         }
 
     return usuario_formateado
+
+
+def buscar_cancion(servicio: Spotify, cancion_a_buscar: str) -> list:
+
+    resultado_de_busqueda: FullTrackPaging = None
+    canciones_encontradas: list = list()
+
+    try:
+        resultado_de_busqueda = servicio.search(
+            query=cancion_a_buscar,
+            types=('track',),
+            limit=10
+        )
+    except tk.HTTPError as err:
+        print(f'Un error ocurrió con la petición: {err}')
+    except ConnectError as err:
+        print(f'Un error ocurrió con la conexión a internet: {err}')
+    except Exception as err:
+        print(f'Un error ocurrió: {err}')
+
+    if resultado_de_busqueda:
+        for item in resultado_de_busqueda[0].items:
+            canciones_encontradas.append({
+                'id': item.id,
+                'nombre_de_cancion': item.name,
+                'duracion_en_ms': item.duration_ms,
+                'album': item.album.name,
+                'artista': item.artists[0].name,
+                'href': item.external_urls.get('spotify', str()),
+                'uri': item.uri
+            })
+
+    return canciones_encontradas
 
 
 def obtener_playlists(servicio: Spotify, id_usuario: str) -> list:
@@ -201,51 +233,3 @@ def agregar_canciones_a_playlist(servicio: Spotify,
         se_actualizo_playlist = True
 
     return se_actualizo_playlist
-
-
-spotify = obtener_servicio()
-
-usuario = obtener_usuario_actual(spotify)
-
-playlists = obtener_playlists(spotify, usuario.get('id', ''))
-
-playlist = obtener_playlist(spotify, playlists[2].get('id', ''))
-
-# playlist_creada = crear_playlist(spotify, usuario.get('id', ''), 'Prueba3', 'Una descripción')
-
-id_playlist = agregar_canciones_a_playlist(spotify, playlists[2].get('id', ''), [
-    playlist[0].get('uri', ''),
-    playlist[1].get('uri', '')
-])
-
-print(id_playlist)
-
-# playlists = spotify.playlists(current_user.id)
-
-# playlist = spotify.playlist(playlists.items[0].id)
-
-# tracks = list()
-# songs = list()
-
-# for item in playlist.tracks.items:
-
-#     songs.append(
-#         {
-#             'nombre_de_cancion': item.track.name,
-#             'artista': item.track.artists[0].name
-#         }
-#     )
-
-# songs_list = [list(x.values()) for x in songs]
-# header = [list(x.keys()) for x in songs]
-# header = header[0]
-# header = [x.upper() for x in header]
-
-# write_csv(header, songs_list)
-
-# playlists = spotify.playlist_create(
-#     user_id=current_user.id,
-#     name='News',
-#     public=True,
-#     description='Playlist creada desde Python'
-# )
