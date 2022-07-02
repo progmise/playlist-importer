@@ -205,9 +205,55 @@ def crear_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
 
     crear_playlist(servicio, usuario.get('id', ''), nombre_de_playlist, descripcion)
 
-    sleep(1)
 
-    mostrar_playlists_de_spotify(servicio, usuario)
+def agregar_una_cancion_a_una_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
+
+    playlists: list = list()
+    nombres_de_playlists: list = list()
+    canciones_a_agregar: list = list()
+    uris_de_canciones: list = list()
+    opcion_de_playlist: int = int()
+    entrada: str = str()
+    flag_agregar_canciones: bool = True
+    se_agregaron_las_canciones: bool = False
+
+    playlists = obtener_playlists(servicio, usuario.get('id', ''))
+    nombres_de_playlists = [x.get('nombre', '') for x in playlists]
+
+    opcion_de_playlist = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
+
+    while flag_agregar_canciones:
+
+        nombre_de_cancion: str = validar_texto_ingresado('Ingrese el nombre de la canción')
+        artista: str = validar_texto_ingresado('Ingrese el artista de la canción')
+
+        canciones_encontradas: list = buscar_cancion(servicio, f'{nombre_de_cancion} {artista}')
+        nombres_de_canciones: list = [
+            f'{x.get("nombre_de_cancion", "")} - {x.get("artista", "")}' for x in canciones_encontradas
+        ]
+
+        opcion_de_cancion = int(obtener_entrada_usuario(nombres_de_canciones)) - 1
+
+        canciones_a_agregar.append(canciones_encontradas[opcion_de_cancion])
+
+        entrada = input('\n¿Quiere seguir ingresando canciones a la playlist (S/N)?: ').upper()
+
+        if entrada not in ['S', 'Y', 'SI', 'YES']:
+            flag_agregar_canciones = False
+
+    uris_de_canciones = [x.get('uri', '') for x in canciones_a_agregar]
+
+    se_agregaron_las_canciones = agregar_canciones_a_playlist(
+        servicio, 
+        playlists[opcion_de_playlist].get('id', ''), 
+        uris_de_canciones
+    )
+
+    if se_agregaron_las_canciones:
+        print('\n¡Se agregaron satisfactoriamente las canciones a la playlist!\n')
+
+    else:
+        print('\n¡Hubo un error y no se agregaron las canciones a la playlist!\n')
 
 
 def iniciar_menu_de_spotify() -> None:
@@ -238,6 +284,10 @@ def iniciar_menu_de_spotify() -> None:
         if opcion == 1:
             crear_playlist_de_spotify(servicio, usuario)
 
+            sleep(1)
+
+            mostrar_playlists_de_spotify(servicio, usuario)            
+
         elif opcion == 2:
             mostrar_playlists_de_spotify(servicio, usuario)
 
@@ -245,7 +295,7 @@ def iniciar_menu_de_spotify() -> None:
             mostrar_canciones_de_playlist_de_spotify(servicio, usuario)
 
         elif opcion == 4:
-            pass
+            agregar_una_cancion_a_una_playlist_de_spotify(servicio, usuario)
 
         elif opcion == 5:
             pass        
