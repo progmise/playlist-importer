@@ -1,4 +1,5 @@
 import csv
+import os
 
 from io import TextIOWrapper
 from re import sub
@@ -76,6 +77,16 @@ def obtener_entrada_usuario(opciones: list) -> str:
     opcion = validar_opcion_ingresada(opciones)
 
     return opcion
+
+
+def eliminar_archivo(ruta_de_archivo: str) -> None:
+
+    if os.path.exists(ruta_de_archivo):
+        os.remove(ruta_de_archivo)
+        print('El archivo fue eliminado satisfactoriamente')
+
+    else:
+        print('¡El archivo no existe!')
 
 
 def leer_archivo_csv(ruta_de_archivo: str) -> 'list[str]':
