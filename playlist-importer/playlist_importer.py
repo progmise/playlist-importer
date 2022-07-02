@@ -140,6 +140,23 @@ def mostrar_lista_de_diccionarios(playlists: dict, titulo: str, tipo_de_elemento
             print(' '*4, f'{key} - {value}')
 
 
+def mostrar_canciones_de_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
+
+    playlists: list = list()
+    nombres_de_playlists: list = list()
+    opcion: int = int()
+    playlist: dict = dict()
+
+    playlists = obtener_playlists(servicio, usuario.get('id', ''))
+    nombres_de_playlists = [x.get('nombre', '') for x in playlists]
+
+    opcion = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
+
+    playlist = obtener_playlist(servicio, playlists[opcion].get('id', ''))
+
+    mostrar_lista_de_diccionarios(playlist, 'Lista de canciones', 'canción')
+
+
 def mostrar_playlists_de_spotify(servicio: Spotify, usuario: dict) -> None:
 
     playlists: list = obtener_playlists(servicio, usuario.get('id', ''))
