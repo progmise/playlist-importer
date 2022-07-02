@@ -1,6 +1,8 @@
 import csv
 
 from io import TextIOWrapper
+from re import sub
+from tekore import Spotify
 
 from spotify_script import agregar_canciones_a_playlist, buscar_cancion
 from spotify_script import crear_playlist, obtener_playlist, obtener_playlists
@@ -12,14 +14,14 @@ def validar_numero(numero: str) -> bool:
     numero_formateado: str = str()
     es_numero_valido: bool = bool()
 
-    numero_formateado = sub("[a-zA-Z]+", "", numero)
+    numero_formateado = sub('[a-zA-Z]+', '', numero)
 
     try:
         int(numero_formateado)
         es_numero_valido = True
 
     except ValueError:
-        print("\n¡Sólo se pueden ingresar numeros!")
+        print('\n¡Sólo se pueden ingresar numeros!')
         es_numero_valido = False
 
     return es_numero_valido
@@ -37,10 +39,10 @@ def validar_opcion(opcion: str, opciones: list) -> bool:
             flag_opcion_valida = True
 
         else:
-            print(f"\n¡Sólo puedes ingresar una opción entre el 1 y el {len(opciones)}!")
+            print(f'\n¡Sólo puedes ingresar una opción entre el 1 y el {len(opciones)}!')
 
     else:
-        print(f"\n¡Las opciones son numeros enteros, sin decimales!")
+        print(f'\n¡Las opciones son numeros enteros, sin decimales!')
 
     return flag_opcion_valida
 
@@ -53,7 +55,7 @@ def validar_opcion_ingresada(opciones: list) -> str:
 
     while not (flag_numero_valido and flag_opcion_valida):
 
-        opcion_ingresada = input("\nIngrese una opción: ")
+        opcion_ingresada = input('\nIngrese una opción: ')
 
         flag_numero_valido = validar_numero(opcion_ingresada)
 
@@ -66,10 +68,10 @@ def obtener_entrada_usuario(opciones: list) -> str:
 
     opcion: str = str()
 
-    print("\nOpciones válidas: \n")
+    print('\nOpciones válidas: \n')
 
     for x in range(len(opciones)):
-        print(x + 1, "-", opciones[x])
+        print(x + 1, '-', opciones[x])
 
     opcion = validar_opcion_ingresada(opciones)
 
@@ -115,17 +117,56 @@ def escribir_archivo_csv(ruta_de_archivo: str, encabezados: list, contenido: lis
         archivo.close()     
 
 
+def iniciar_menu_de_spotify() -> None:
+
+    opciones: list = [
+        'Crear nueva playlist',
+        'Listar playlists',
+        'Listar canciones de playlist',
+        'Agregar canción a una playlist'
+        'Exportar playlist a Youtube'
+        'Cerrar sesión'
+        'Salir'
+    ]
+
+    servicio: Spotify = obtener_servicio()
+    usuario: dict = obtener_usuario_actual(servicio)
+
+    opcion: int = int(obtener_entrada_usuario(opciones))
+
+    while opcion != 7:
+
+        if opcion == 1:
+            pass
+
+        elif opcion == 2:
+            pass
+
+        elif opcion == 3:
+            pass
+
+        elif opcion == 4:
+            pass
+
+        elif opcion == 5:
+            pass        
+
+        elif opcion == 6:
+            pass         
+
+        opcion = int(obtener_entrada_usuario(opciones))    
+
 
 def main() -> None:
 
     opciones: list = [
-        "Spotify",
-        "Youtube",
+        'Spotify',
+        'Youtube',
         'Cerrar sesiones'
-        "Salir"
+        'Salir'
     ]
 
-    opcion = int(obtener_entrada_usuario(opciones))
+    opcion: int = int(obtener_entrada_usuario(opciones))
 
     while opcion != 4:
 
@@ -140,8 +181,8 @@ def main() -> None:
 
         opcion = int(obtener_entrada_usuario(opciones))
 
-    print("\nPrograma finalizado")
+    print('\nPrograma finalizado')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
