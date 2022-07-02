@@ -9,7 +9,7 @@ from tekore.model import FullPlaylist, PrivateUser, SimplePlaylistPaging
 CLIENT_ID = '6390fd98ea7e4ad791d81538a49f9aab'
 CLIENT_SECRET = 'cb1fe6104d164f5ca67ed4eeb98e647b'
 REDIRECT_URI = 'https://example.com/callback'  
-ARCHIVO_TEKORE = 'tekore.cfg'
+ARCHIVO_TEKORE = 'resources//tekore.cfg'
 
 
 def cargar_token():
@@ -126,7 +126,7 @@ def crear_playlist(servicio: Spotify, id_usuario: str,
     return playlist.id
 
 
-# current_user = spotify.current_user()
+current_user = spotify.current_user()
 
 
 # playlists = spotify.playlists(current_user.id)
@@ -158,5 +158,3 @@ def crear_playlist(servicio: Spotify, id_usuario: str,
 #     public=True,
 #     description='Playlist creada desde Python'
 # )
-
-

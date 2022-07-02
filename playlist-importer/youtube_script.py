@@ -16,8 +16,8 @@ SCOPES = [
 ]
 
 # Archivo generado para la API
-ARCHIVO_SECRET_CLIENT = 'credentials.json'
-ARCHIVO_TOKEN = 'token.json'
+ARCHIVO_CLIENT_SECRET = 'resources//credentials.json'
+ARCHIVO_TOKEN = 'resources//token.json'
 
 FILENAME = "songs.csv"
 
@@ -70,7 +70,7 @@ def son_credenciales_expiradas(credencial: Credentials) -> bool:
 
 def autorizar_credenciales() -> Credentials:
 
-    flow: InstalledAppFlow = InstalledAppFlow.from_client_secrets_file(ARCHIVO_SECRET_CLIENT, SCOPES)
+    flow: InstalledAppFlow = InstalledAppFlow.from_client_secrets_file(ARCHIVO_CLIENT_SECRET, SCOPES)
 
     return flow.run_local_server(open_browser=False, port=0)
 
