@@ -5,6 +5,7 @@ from io import TextIOWrapper
 from re import sub
 from tekore import Spotify
 
+from spotify_script import ARCHIVO_TEKORE
 from spotify_script import agregar_canciones_a_playlist, buscar_cancion
 from spotify_script import crear_playlist, obtener_playlist, obtener_playlists
 from spotify_script import obtener_servicio, obtener_usuario_actual
@@ -134,18 +135,24 @@ def iniciar_menu_de_spotify() -> None:
         'Crear nueva playlist',
         'Listar playlists',
         'Listar canciones de playlist',
-        'Agregar canción a una playlist'
-        'Exportar playlist a Youtube'
-        'Cerrar sesión'
+        'Agregar canción a una playlist',
+        'Exportar playlist a Youtube',
+        'Cerrar sesión',
         'Salir'
     ]
 
+    se_cerro_sesion: bool = False
     servicio: Spotify = obtener_servicio()
     usuario: dict = obtener_usuario_actual(servicio)
 
     opcion: int = int(obtener_entrada_usuario(opciones))
 
     while opcion != 7:
+
+        if se_cerro_sesion:
+            servicio: Spotify = obtener_servicio()
+            usuario: dict = obtener_usuario_actual(servicio)
+            se_cerro_sesion = False
 
         if opcion == 1:
             pass
@@ -163,7 +170,8 @@ def iniciar_menu_de_spotify() -> None:
             pass        
 
         elif opcion == 6:
-            pass         
+            eliminar_archivo(ARCHIVO_TEKORE)
+            se_cerro_sesion = True
 
         opcion = int(obtener_entrada_usuario(opciones))    
 
@@ -173,7 +181,7 @@ def main() -> None:
     opciones: list = [
         'Spotify',
         'Youtube',
-        'Cerrar sesiones'
+        'Cerrar sesiones',
         'Salir'
     ]
 
