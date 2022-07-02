@@ -4,6 +4,7 @@ import os
 from io import TextIOWrapper
 from re import sub
 from tekore import Spotify
+from time import sleep
 
 from spotify_script import ARCHIVO_TEKORE
 from spotify_script import agregar_canciones_a_playlist, buscar_cancion
@@ -11,7 +12,25 @@ from spotify_script import crear_playlist, obtener_playlist, obtener_playlists
 from spotify_script import obtener_servicio, obtener_usuario_actual
 
 
-def validar_numero(numero: str) -> bool:
+def es_texto_valido(texto: str) -> bool:
+
+    flag_texto_valido: bool = False
+
+    if not texto.isspace():
+
+        if texto:
+            flag_texto_valido = True
+
+        else:
+            print(f'\n¡El texto está vacío, se debe ingresar algo!')
+
+    else:
+        print(f'\n¡No se pueden ingresar solamente espacios!')
+
+    return flag_texto_valido
+
+
+def es_numero_entero(numero: str) -> bool:
 
     numero_formateado: str = str()
     es_numero_valido: bool = bool()
@@ -29,7 +48,7 @@ def validar_numero(numero: str) -> bool:
     return es_numero_valido
 
 
-def validar_opcion(opcion: str, opciones: list) -> bool:
+def es_opcion_valida(opcion: str, opciones: list) -> bool:
 
     numero_de_opcion: int = int()
     flag_opcion_valida: bool = False
@@ -49,19 +68,34 @@ def validar_opcion(opcion: str, opciones: list) -> bool:
     return flag_opcion_valida
 
 
+def validar_texto_ingresado(mensaje_a_mostrar: str) -> str:
+
+    texto_ingresado: str = str()
+    flag_texto_valido: bool = True
+
+    while flag_texto_valido:
+
+        texto_ingresado = input(f'\n{mensaje_a_mostrar}: ')
+
+        if es_texto_valido(texto_ingresado):
+            flag_texto_valido = False
+
+    return texto_ingresado
+
+
 def validar_opcion_ingresada(opciones: list) -> str:
 
     opcion_ingresada: str = str()
-    flag_numero_valido: bool = False
+    flag_numero_entero_valido: bool = False
     flag_opcion_valida: bool = False
 
-    while not (flag_numero_valido and flag_opcion_valida):
+    while not (flag_numero_entero_valido and flag_opcion_valida):
 
         opcion_ingresada = input('\nIngrese una opción: ')
 
-        flag_numero_valido = validar_numero(opcion_ingresada)
+        flag_numero_entero_valido = es_numero_entero(opcion_ingresada)
 
-        flag_opcion_valida = validar_opcion(opcion_ingresada, opciones)
+        flag_opcion_valida = es_opcion_valida(opcion_ingresada, opciones)
 
     return opcion_ingresada
 
@@ -164,6 +198,18 @@ def mostrar_playlists_de_spotify(servicio: Spotify, usuario: dict) -> None:
     mostrar_lista_de_diccionarios(playlists, 'Listas de reproducción', 'playlist')
 
 
+def crear_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
+
+    nombre_de_playlist: str = validar_texto_ingresado('Ingrese el nombre de la nueva playlist')
+    descripcion: str = validar_texto_ingresado('Ingrese la descripción de la nueva playlist')
+
+    crear_playlist(servicio, usuario.get('id', ''), nombre_de_playlist, descripcion)
+
+    sleep(1)
+
+    mostrar_playlists_de_spotify(servicio, usuario)
+
+
 def iniciar_menu_de_spotify() -> None:
 
     opciones: list = [
@@ -190,7 +236,7 @@ def iniciar_menu_de_spotify() -> None:
             se_cerro_sesion = False
 
         if opcion == 1:
-            pass
+            crear_playlist_de_spotify(servicio, usuario)
 
         elif opcion == 2:
             mostrar_playlists_de_spotify(servicio, usuario)
