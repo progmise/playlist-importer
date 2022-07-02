@@ -129,6 +129,24 @@ def escribir_archivo_csv(ruta_de_archivo: str, encabezados: list, contenido: lis
         archivo.close()     
 
 
+def mostrar_playlists(playlists: dict) -> None:
+
+    print('\nListas de reproducción: \n')
+
+    for x in range(len(playlists)):
+        print(' '*2, f'{x + 1}° playlist: ')
+
+        for key, value in playlists[x].items():
+            print(' '*5, f'{key} - {value}')    
+
+
+def mostrar_playlists_de_spotify(servicio: Spotify, usuario: dict) -> None:
+
+    playlists: list = obtener_playlists(servicio, usuario.get('id', ''))
+
+    mostrar_playlists(playlists)
+
+
 def iniciar_menu_de_spotify() -> None:
 
     opciones: list = [
@@ -158,7 +176,7 @@ def iniciar_menu_de_spotify() -> None:
             pass
 
         elif opcion == 2:
-            pass
+            mostrar_playlists_de_spotify(servicio, usuario)
 
         elif opcion == 3:
             pass
