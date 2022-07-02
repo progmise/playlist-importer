@@ -120,24 +120,30 @@ def obtener_playlists(servicio: Spotify, id_usuario: str) -> list:
 def obtener_playlist(servicio: Spotify, id_playlist: str) -> list:
 
     playlist: FullPlaylist = None
-    items_de_playlist = list()
+    playlist_formateada: list = list()
 
     try:
         playlist = servicio.playlist(id_playlist)
-    except tk.BadRequest:
-        print(f'Un error en la petición: {tk.BadRequest}')
-    except tk.HTTPError:
-        print(f'Un error ocurrió: {tk.HTTPError}')  
+    except tk.HTTPError as err:
+        print(f'Un error ocurrió con la petición: {err}')
+    except ConnectError as err:
+        print(f'Un error ocurrió con la conexión a internet: {err}')
+    except Exception as err:
+        print(f'Un error ocurrió: {err}')
 
-    for item in playlist.tracks.items:
-        items_de_playlist.append(
-            {
+    if playlist: 
+        for item in playlist.tracks.items:
+            playlist_formateada.append({
+                'id': item.track.id,
                 'nombre_de_cancion': item.track.name,
-                'artista': item.track.artists[0].name
-            }
-        )
+                'duracion_en_ms': item.track.duration_ms,
+                'album': item.track.album.name,
+                'artista': item.track.artists[0].name,
+                'href': item.track.external_urls.get('spotify', str()),
+                'uri': item.track.uri
+            })
 
-    return items_de_playlist
+    return playlist_formateada
 
 
 def crear_playlist(servicio: Spotify, id_usuario: str, 
@@ -161,7 +167,9 @@ usuario = obtener_usuario_actual(spotify)
 
 playlists = obtener_playlists(spotify, usuario.get('id', ''))
 
-print(playlists)
+playlist = obtener_playlist(spotify, playlists[1].get('id', ''))
+
+print(playlist)
 
 # playlists = spotify.playlists(current_user.id)
 
