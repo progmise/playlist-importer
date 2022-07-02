@@ -129,22 +129,22 @@ def escribir_archivo_csv(ruta_de_archivo: str, encabezados: list, contenido: lis
         archivo.close()     
 
 
-def mostrar_playlists(playlists: dict) -> None:
+def mostrar_lista_de_diccionarios(playlists: dict, titulo: str, tipo_de_elemento: str) -> None:
 
-    print('\nListas de reproducción: \n')
+    print(f'\n{titulo}: ')
 
     for x in range(len(playlists)):
-        print(' '*2, f'{x + 1}° playlist: ')
+        print(f'\n  {x + 1}° {tipo_de_elemento}: ')
 
         for key, value in playlists[x].items():
-            print(' '*5, f'{key} - {value}')    
+            print(' '*4, f'{key} - {value}')
 
 
 def mostrar_playlists_de_spotify(servicio: Spotify, usuario: dict) -> None:
 
     playlists: list = obtener_playlists(servicio, usuario.get('id', ''))
 
-    mostrar_playlists(playlists)
+    mostrar_lista_de_diccionarios(playlists, 'Listas de reproducción', 'playlist')
 
 
 def iniciar_menu_de_spotify() -> None:
@@ -179,7 +179,7 @@ def iniciar_menu_de_spotify() -> None:
             mostrar_playlists_de_spotify(servicio, usuario)
 
         elif opcion == 3:
-            pass
+            mostrar_canciones_de_playlist_de_spotify(servicio, usuario)
 
         elif opcion == 4:
             pass
