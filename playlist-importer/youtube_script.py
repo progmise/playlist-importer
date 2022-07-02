@@ -17,7 +17,7 @@ SCOPES = [
 
 # Archivo generado para la API
 ARCHIVO_CLIENT_SECRET = 'resources//credentials.json'
-ARCHIVO_TOKEN = 'resources//token.json'
+ARCHIVO_TOKEN = 'resources\\token.json'
 
 FILENAME = "songs.csv"
 

@@ -177,9 +177,9 @@ def mostrar_lista_de_diccionarios(playlists: dict, titulo: str, tipo_de_elemento
 def mostrar_canciones_de_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
 
     playlists: list = list()
+    playlist: list = list()
     nombres_de_playlists: list = list()
     opcion: int = int()
-    playlist: dict = dict()
 
     playlists = obtener_playlists(servicio, usuario.get('id', ''))
     nombres_de_playlists = [x.get('nombre', '') for x in playlists]
@@ -256,6 +256,33 @@ def agregar_una_cancion_a_una_playlist_de_spotify(servicio: Spotify, usuario: di
         print('\n¡Hubo un error y no se agregaron las canciones a la playlist!\n')
 
 
+def exportar_playlist_a_csv(playlist: list, ruta_de_archivo: str) -> None:
+
+    canciones: list = [list(x.values()) for x in playlist]
+    encabezados: list = [list(x.keys()) for x in playlist]
+    encabezados = encabezados[0]
+    encabezados = [x.upper() for x in encabezados]    
+
+    escribir_archivo_csv(ruta_de_archivo, encabezados, canciones)
+
+
+def exportar_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
+    
+    playlists: list = list()
+    playlist: list = list()
+    nombres_de_playlists: list = list()
+    opcion: int = int()
+
+    playlists = obtener_playlists(servicio, usuario.get('id', ''))
+    nombres_de_playlists = [x.get('nombre', '') for x in playlists]
+
+    opcion = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
+
+    playlist = obtener_playlist(servicio, playlists[opcion].get('id', ''))
+
+    exportar_playlist_a_csv(playlist, 'data\\spotify_to_youtube.csv')
+
+
 def iniciar_menu_de_spotify() -> None:
 
     opciones: list = [
@@ -298,7 +325,7 @@ def iniciar_menu_de_spotify() -> None:
             agregar_una_cancion_a_una_playlist_de_spotify(servicio, usuario)
 
         elif opcion == 5:
-            pass        
+            exportar_playlist_de_spotify(servicio, usuario)      
 
         elif opcion == 6:
             eliminar_archivo(ARCHIVO_TEKORE)

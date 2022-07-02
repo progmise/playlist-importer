@@ -9,7 +9,7 @@ from tekore.model import FullPlaylist, FullTrackPaging, PrivateUser, SimplePlayl
 CLIENT_ID = '6390fd98ea7e4ad791d81538a49f9aab'
 CLIENT_SECRET = 'cb1fe6104d164f5ca67ed4eeb98e647b'
 REDIRECT_URI = 'https://example.com/callback'  
-ARCHIVO_TEKORE = 'resources//tekore.cfg'
+ARCHIVO_TEKORE = 'resources\\tekore.cfg'
 
 
 def cargar_token():
