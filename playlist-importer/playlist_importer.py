@@ -476,6 +476,8 @@ def main() -> None:
         'Salir'
     ]
 
+    print('\n######## Menú Principal ########')
+
     opcion: int = int(obtener_entrada_usuario(opciones))
 
     while opcion != 4:
@@ -489,6 +491,8 @@ def main() -> None:
         elif opcion == 3:
             eliminar_archivo(spotify.ARCHIVO_TEKORE)
             eliminar_archivo(youtube.ARCHIVO_TOKEN)        
+
+        print('\n######## Menú Principal ########')
 
         opcion = int(obtener_entrada_usuario(opciones))
 
