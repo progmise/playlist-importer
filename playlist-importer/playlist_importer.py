@@ -406,7 +406,8 @@ def main() -> None:
             iniciar_menu_de_youtube()
 
         elif opcion == 3:
-            pass         
+            eliminar_archivo(spotify.ARCHIVO_TEKORE)
+            eliminar_archivo(youtube.ARCHIVO_TOKEN)        
 
         opcion = int(obtener_entrada_usuario(opciones))
 
