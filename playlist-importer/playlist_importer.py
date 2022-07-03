@@ -281,6 +281,13 @@ def exportar_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
     exportar_playlist_a_csv(playlist, 'data\\spotify_to_youtube.csv')
 
 
+def mostrar_playlists_de_youtube(servicio: Resource) -> None:
+
+    playlists: list = youtube.obtener_playlists(servicio)
+
+    mostrar_lista_de_diccionarios(playlists, 'Listas de reproducción', 'playlist')    
+
+
 def iniciar_menu_de_spotify() -> None:
 
     opciones: list = [
@@ -364,12 +371,10 @@ def iniciar_menu_de_youtube() -> None:
             pass           
 
         elif opcion == 2:
-            # mostrar_playlists_de_youtube(servicio)
-            pass
+            mostrar_playlists_de_youtube(servicio)
 
         elif opcion == 3:
-            # mostrar_videos_de_playlist_de_youtube(servicio)
-            pass
+            mostrar_videos_de_playlist_de_youtube(servicio)
 
         elif opcion == 4:
             # agregar_un_elemento_a_una_playlist_de_youtube(servicio)
