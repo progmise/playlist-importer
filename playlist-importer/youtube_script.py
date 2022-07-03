@@ -145,7 +145,7 @@ def buscar_video(servicio: Resource, cancion_a_buscar: str) -> list:
         if item.get('id', dict()).get('kind', str()) == 'youtube#video':
             videos.append({
                 'id': item.get('id', dict()).get('videoId', str()),
-                'nombre_de_video': item['snippet']['title']
+                'nombre_de_video': item.get('snippet', dict()).get('title', '')
             })
 
     return videos
@@ -204,7 +204,7 @@ def obtener_playlist(servicio: Resource, id_playlist: str) -> list:
     if playlist:
         for item in playlist.get('items', list()):
             playlist_formateada.append({
-                'id': item.get('id', ''),
+                'id': item.get('id', str()),
                 'nombre_de_cancion': obtener_nombre_del_video(item),
                 'artista': obtener_artista_del_video(item),
                 'duracion_en_ms': int(),
