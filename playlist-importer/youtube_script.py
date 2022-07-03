@@ -2,7 +2,6 @@ import os
 
 from argparse import ArgumentParser, Namespace
 from io import TextIOWrapper
-from typing import Any
 from googleapiclient.discovery import Resource, build
 from googleapiclient.errors import HttpError, Error
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -255,15 +254,15 @@ def crear_playlist(servicio: Resource, titulo: str,
     try:
         playlist = servicio.playlists().insert(
             part='snippet, status',
-            body=dict(
-                snippet=dict(
-                    title=titulo,
-                    description=descripcion
-                ),
-                status=dict(
-                    privacyStatus=privacidad
-                )
-            )
+            body={
+                'snippet': {
+                    'title': titulo,
+                    'description': descripcion
+                },
+                'status': {
+                    'privacyStatus': privacidad
+                }
+            }
         ).execute()
     except HttpError as err:
         print(f'Un error ocurrió con la petición: {err}')
@@ -285,30 +284,38 @@ def crear_playlist(servicio: Resource, titulo: str,
     return playlist_creada
 
 
-def agregar_elemento_a_playlist(servicio: Resource, id_playlist: str, video: dict) -> Any:
+def agregar_elementos_a_playlist(servicio: Resource, id_playlist: str, videos: list) -> bool:
 
-    respuesta: dict = dict()
+    elemento_de_playlist: dict = dict()
+    se_agregaron_todos_los_elementos: bool = True
 
-    try:
-        respuesta = servicio.playlistItems().insert(
-            part="snippet",
-            body={
-                'kind': "youtube#playlistItem",
-                'snippet': {
-                    'playlistId': id_playlist,
-                    'position': 0,
-                    'resourceId': {
-                        'kind': video.get('kind', str()),
-                        'videoId': video.get('video_id', str())
-                    }                
+    for video in videos:
+        try:
+            elemento_de_playlist = servicio.playlistItems().insert(
+                part='snippet',
+                body={
+                    'kind': 'youtube#playlistItem',
+                    'snippet': {
+                        'playlistId': id_playlist,
+                        'resourceId': {
+                            'kind': video.get('kind', str()),
+                            'videoId': video.get('video_id', str())
+                        }                
+                    }
                 }
-            }
-        ).execute()    
+            ).execute()
 
-    except (HttpError, Error):
-        print(f'Un error ocurrió: {Error}')
+        except HttpError as err:
+            print(f'Un error ocurrió con la petición: {err}')
+        except ConnectError as err:
+            print(f'Un error ocurrió con la conexión a internet: {err}')
+        except Exception as err:
+            print(f'Un error ocurrió: {err}')
 
-    return respuesta
+        if not elemento_de_playlist:
+            se_agregaron_todos_los_elementos = False
+
+    return se_agregaron_todos_los_elementos
 
 
 youtube = obtener_servicio()
