@@ -388,8 +388,8 @@ def iniciar_menu_de_spotify() -> None:
     ]
 
     se_cerro_sesion: bool = False
-    servicio: Spotify = spotify.obtener_servicio()
-    usuario: dict = spotify.obtener_usuario_actual(servicio)
+    servicio_de_spotify: Spotify = spotify.obtener_servicio()
+    usuario: dict = spotify.obtener_usuario_actual(servicio_de_spotify)
 
     print('\n######## Spotify ########')
 
@@ -398,28 +398,28 @@ def iniciar_menu_de_spotify() -> None:
     while opcion != 7:
 
         if se_cerro_sesion:
-            servicio = spotify.obtener_servicio()
-            usuario = spotify.obtener_usuario_actual(servicio)
+            servicio_de_spotify = spotify.obtener_servicio()
+            usuario = spotify.obtener_usuario_actual(servicio_de_spotify)
             se_cerro_sesion = False
 
         if opcion == 1:
-            crear_playlist_de_spotify(servicio, usuario)
+            crear_playlist_de_spotify(servicio_de_spotify, usuario)
 
             sleep(1)
 
-            mostrar_playlists_de_spotify(servicio, usuario)            
+            mostrar_playlists_de_spotify(servicio_de_spotify, usuario)            
 
         elif opcion == 2:
-            mostrar_playlists_de_spotify(servicio, usuario)
+            mostrar_playlists_de_spotify(servicio_de_spotify, usuario)
 
         elif opcion == 3:
-            mostrar_canciones_de_playlist_de_spotify(servicio, usuario)
+            mostrar_canciones_de_playlist_de_spotify(servicio_de_spotify, usuario)
 
         elif opcion == 4:
-            agregar_una_cancion_a_una_playlist_de_spotify(servicio, usuario)
+            agregar_una_cancion_a_una_playlist_de_spotify(servicio_de_spotify, usuario)
 
         elif opcion == 5:
-            exportar_playlist_de_spotify(servicio, usuario)      
+            exportar_playlist_de_spotify(servicio_de_spotify, usuario)      
 
         elif opcion == 6:
             eliminar_archivo(spotify.ARCHIVO_TEKORE)
@@ -443,7 +443,7 @@ def iniciar_menu_de_youtube() -> None:
     ]
 
     se_cerro_sesion: bool = False
-    servicio: Resource = youtube.obtener_servicio()
+    servicio_de_youtube: Resource = youtube.obtener_servicio()
 
     print('\n######## YouTube ########')
 
@@ -452,27 +452,27 @@ def iniciar_menu_de_youtube() -> None:
     while opcion != 7:
 
         if se_cerro_sesion:
-            servicio = youtube.obtener_servicio()
+            servicio_de_youtube = youtube.obtener_servicio()
             se_cerro_sesion = False
 
         if opcion == 1:
-            crear_playlist_de_youtube(servicio)
+            crear_playlist_de_youtube(servicio_de_youtube)
 
             sleep(5)
 
-            mostrar_playlists_de_youtube(servicio)          
+            mostrar_playlists_de_youtube(servicio_de_youtube)          
 
         elif opcion == 2:
-            mostrar_playlists_de_youtube(servicio)
+            mostrar_playlists_de_youtube(servicio_de_youtube)
 
         elif opcion == 3:
-            mostrar_videos_de_playlist_de_youtube(servicio)
+            mostrar_videos_de_playlist_de_youtube(servicio_de_youtube)
 
         elif opcion == 4:
-            agregar_un_elemento_a_una_playlist_de_youtube(servicio)
+            agregar_un_elemento_a_una_playlist_de_youtube(servicio_de_youtube)
 
         elif opcion == 5:
-            exportar_playlist_de_youtube(servicio)  
+            exportar_playlist_de_youtube(servicio_de_youtube)  
 
         elif opcion == 6:
             eliminar_archivo(youtube.ARCHIVO_TOKEN)
