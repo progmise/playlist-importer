@@ -5,7 +5,7 @@ import youtube_script as youtube
 
 from googleapiclient.discovery import Resource
 from io import TextIOWrapper
-from re import sub
+from re import findall, sub
 from tekore import Spotify
 from time import sleep
 
@@ -129,7 +129,7 @@ def leer_archivo_csv(ruta_de_archivo: str) -> 'list[str]':
 
     try:
         with archivo:
-            csv_lector = csv.reader(archivo, delimiter=',')
+            csv_lector = csv.reader(archivo, delimiter=',', quoting=csv.QUOTE_NONNUMERIC,)
         
             for dato in csv_lector:
                 datos.append(dato)
@@ -159,6 +159,59 @@ def escribir_archivo_csv(ruta_de_archivo: str, encabezados: list, contenido: lis
 
     finally:
         archivo.close()     
+
+
+def normalizar_nombre_de_cancion(nombre_de_cancion: str) -> str:
+
+    nombre_de_cancion_normalizada: str = str()
+    cadenas_coincidentes: list = findall('^[^\(|\[|\{\-]+', nombre_de_cancion)
+
+    nombre_de_cancion_normalizada = cadenas_coincidentes[0].strip()
+
+    return nombre_de_cancion_normalizada
+
+
+def normalizar_datos_de_items(datos: list) -> tuple:
+
+    encabezados_de_items: list = list()
+    datos_de_items: list = list()
+
+    encabezados_de_items = datos[0:1][0]
+    datos_de_items = datos[1:]
+
+    return encabezados_de_items, datos_de_items
+
+
+def convertir_dato_a_item(dato_de_item: list, encabezados_de_item: list) -> dict:
+
+    item: dict = dict()
+
+    for indice in range(len(encabezados_de_item)):
+
+        if isinstance(dato_de_item[indice], float):
+            item[encabezados_de_item[indice].lower()] = int(dato_de_item[indice])
+
+        else:
+            item[encabezados_de_item[indice].lower()] = dato_de_item[indice]
+
+    return item
+
+
+def procesar_archivo_csv(ruta_de_archivo: str) -> list:
+
+    items: list = list()
+    encabezados_de_item: list = list()
+    datos_de_items: list = list()
+    datos: list = leer_archivo_csv(ruta_de_archivo)
+
+    encabezados_de_item, datos_de_items = normalizar_datos_de_items(datos)    
+
+    for datos_de_item in datos_de_items:
+        items.append(
+            convertir_dato_a_item(datos_de_item, encabezados_de_item)
+        )
+
+    return items
 
 
 def mostrar_lista_de_diccionarios(playlists: dict, titulo: str, tipo_de_elemento: str) -> None:
@@ -278,7 +331,46 @@ def exportar_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
 
     playlist = spotify.obtener_playlist(servicio, playlists[opcion].get('id', str()))
 
+    for item in playlist:
+        item['nombre_de_cancion'] = normalizar_nombre_de_cancion(item.get('nombre_de_cancion', ''))
+        item['nombre_de_playlist'] = playlists[opcion].get('nombre', '')
+        item['descripcion_de_playlist'] = playlists[opcion].get('descripcion', '')
+
     exportar_playlist_a_csv(playlist, 'data\\spotify_to_youtube.csv')
+
+
+def importar_playlist_a_youtube(servicio: Resource) -> None:
+
+    playlist: dict = dict()
+    videos_a_agregar: list = list()
+    items_de_playlist: list = procesar_archivo_csv('data\\spotify_to_youtube.csv')
+    se_importo_la_playlist_completa: bool = False
+
+    playlist = youtube.crear_playlist(
+        servicio, 
+        items_de_playlist[0].get('nombre_de_playlist'), 
+        items_de_playlist[0].get('descripcion_de_playlist')
+    )
+
+    for item in items_de_playlist:
+        videos_encontrados: list = youtube.buscar_video(
+            servicio, 
+            f'{item.get("nombre_de_cancion", "")} {item.get("artista", "")}'
+        )
+
+        videos_a_agregar.append(videos_encontrados[0])
+
+    se_importo_la_playlist_completa = youtube.agregar_elementos_a_playlist(
+        servicio, 
+        playlist.get('id', str()), 
+        videos_a_agregar
+    )
+
+    if se_importo_la_playlist_completa:
+        print('\n¡Se importó satisfactoriamente la playlist a YouTube!\n')
+
+    else:
+        print('\n¡Hubo un error y no se importó toda la playlist a YouTube!\n')    
 
 
 def mostrar_videos_de_playlist_de_youtube(servicio: Resource) -> None:
@@ -372,6 +464,11 @@ def exportar_playlist_de_youtube(servicio: Resource) -> None:
 
     playlist = youtube.obtener_playlist(servicio, playlists[opcion].get('id', str()))
 
+    for item in playlist:
+        item['nombre_de_cancion'] = normalizar_nombre_de_cancion(item.get('nombre_de_cancion', ''))
+        item['nombre_de_playlist'] = playlists[opcion].get('nombre', '')
+        item['descripcion_de_playlist'] = playlists[opcion].get('descripcion', '')
+
     exportar_playlist_a_csv(playlist, 'data\\youtube_to_spotify.csv')
 
 
@@ -419,7 +516,10 @@ def iniciar_menu_de_spotify() -> None:
             agregar_una_cancion_a_una_playlist_de_spotify(servicio_de_spotify, usuario)
 
         elif opcion == 5:
-            exportar_playlist_de_spotify(servicio_de_spotify, usuario)      
+            servicio_de_youtube: Resource = youtube.obtener_servicio()
+
+            exportar_playlist_de_spotify(servicio_de_spotify, usuario)
+            importar_playlist_a_youtube(servicio_de_youtube)
 
         elif opcion == 6:
             eliminar_archivo(spotify.ARCHIVO_TEKORE)
