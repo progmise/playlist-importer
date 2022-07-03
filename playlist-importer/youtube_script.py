@@ -1,14 +1,12 @@
 import os
 
-from argparse import ArgumentParser, Namespace
-from io import TextIOWrapper
-from googleapiclient.discovery import Resource, build
-from googleapiclient.errors import HttpError, Error
+from googleapiclient.discovery import build, Resource
+from googleapiclient.errors import HttpError
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from httpx import ConnectError
-from oauth2client.tools import argparser, _CreateArgumentParser
+from io import TextIOWrapper
 
 SCOPES = [
     'https://www.googleapis.com/auth/youtube'
@@ -17,8 +15,6 @@ SCOPES = [
 # Archivo generado para la API
 ARCHIVO_CLIENT_SECRET = 'resources\\credentials.json'
 ARCHIVO_TOKEN = 'resources\\token.json'
-
-FILENAME = "songs.csv"
 
 
 def cargar_credenciales() -> Credentials:
@@ -127,57 +123,32 @@ def obtener_nombre_del_video(item_de_playlist: dict) -> str:
     return nombre_del_video
 
 
-def crear_criterio_de_busqueda(elemento_a_buscar: str, cantidad_de_resultados: int) -> Namespace:
+def buscar_video(servicio: Resource, cancion_a_buscar: str) -> list:
 
-    argparser: ArgumentParser = _CreateArgumentParser()
-
-    argparser.add_argument('--q', help='Search term', default=elemento_a_buscar)
-    argparser.add_argument('--max-results', help='Max results', default=cantidad_de_resultados)
-
-    return argparser.parse_args()    
-
-
-def buscar_en_youtube(servicio: Resource, opciones: Namespace) -> tuple:
-
-    respuesta_de_busqueda: dict = dict()
+    resultado_de_busqueda: dict = dict()
     videos: list = list()
-    canales: list = list()
-    playlists: list = list()
 
     try:
-        respuesta_de_busqueda = servicio.search().list(
-            q=opciones.q,
+        resultado_de_busqueda = servicio.search().list(
             part='id, snippet',
-            maxResults=opciones.max_results
+            maxResults=10,
+            q=cancion_a_buscar
         ).execute()
+    except HttpError as err:
+        print(f'Un error ocurrió con la petición: {err}')
+    except ConnectError as err:
+        print(f'Un error ocurrió con la conexión a internet: {err}')
+    except Exception as err:
+        print(f'Un error ocurrió: {err}')
 
-    except (HttpError, Error):
-        print(f'Un error ocurrió: {Error}') 
-
-    for resultado_de_busqueda in respuesta_de_busqueda.get('items', list()):
-
-        if resultado_de_busqueda['id']['kind'] == 'youtube#video':
+    for item in resultado_de_busqueda.get('items', list()):
+        if item.get('id', dict()).get('kind', str()) == 'youtube#video':
             videos.append({
-                'title': resultado_de_busqueda['snippet']['title'],
-                'video_id': resultado_de_busqueda['id']['videoId'],
-                'kind': resultado_de_busqueda['id']['kind']
+                'id': item.get('id', dict()).get('videoId', str()),
+                'nombre_de_video': item['snippet']['title']
             })
 
-        elif resultado_de_busqueda['id']['kind'] == 'youtube#channel':
-            videos.append({
-                'title': resultado_de_busqueda['snippet']['title'],
-                'video_id': resultado_de_busqueda['id']['channelId'],
-                'kind': resultado_de_busqueda['id']['kind']
-            })
-
-        elif resultado_de_busqueda['id']['kind'] == 'youtube#playlist':
-            videos.append({
-                'title': resultado_de_busqueda['snippet']['title'],
-                'video_id': resultado_de_busqueda['id']['playlistId'],
-                'kind': resultado_de_busqueda['id']['kind']
-            })
-
-    return videos, canales, playlists
+    return videos
 
 
 def obtener_playlists(servicio: Resource) -> list:
@@ -298,8 +269,8 @@ def agregar_elementos_a_playlist(servicio: Resource, id_playlist: str, videos: l
                     'snippet': {
                         'playlistId': id_playlist,
                         'resourceId': {
-                            'kind': video.get('kind', str()),
-                            'videoId': video.get('video_id', str())
+                            'kind': 'youtube#video',
+                            'videoId': video.get('id', str())
                         }                
                     }
                 }
@@ -323,7 +294,9 @@ youtube = obtener_servicio()
 # playlists = obtener_playlists(youtube)
 # playlist = obtener_playlist(youtube, playlists[0].get('id', ''))
 
-playlist_creada = crear_playlist(youtube, 'Una nueva playlist', 'Prueba desde Python')
+# playlist_creada = crear_playlist(youtube, 'Una nueva playlist', 'Prueba desde Python')
+
+videos = buscar_video(youtube, 'No Lie Sean Paul')
 
 # This code creates a new, private playlist in the authorized user's channel.
 # playlists_insert_response = youtube.playlists().insert(
