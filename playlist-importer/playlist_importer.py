@@ -374,6 +374,8 @@ def iniciar_menu_de_spotify() -> None:
     servicio: Spotify = spotify.obtener_servicio()
     usuario: dict = spotify.obtener_usuario_actual(servicio)
 
+    print('\n######## Spotify ########')
+
     opcion: int = int(obtener_entrada_usuario(opciones))
 
     while opcion != 7:
@@ -406,6 +408,8 @@ def iniciar_menu_de_spotify() -> None:
             eliminar_archivo(spotify.ARCHIVO_TEKORE)
             se_cerro_sesion = True
 
+        print('\n######## Spotify ########')
+
         opcion = int(obtener_entrada_usuario(opciones))    
 
 
@@ -423,6 +427,8 @@ def iniciar_menu_de_youtube() -> None:
 
     se_cerro_sesion: bool = False
     servicio: Resource = youtube.obtener_servicio()
+
+    print('\n######## YouTube ########')
 
     opcion: int = int(obtener_entrada_usuario(opciones))
 
@@ -455,6 +461,8 @@ def iniciar_menu_de_youtube() -> None:
         elif opcion == 6:
             eliminar_archivo(youtube.ARCHIVO_TOKEN)
             se_cerro_sesion = True
+
+        print('\n######## YouTube ########')
 
         opcion = int(obtener_entrada_usuario(opciones))    
 
