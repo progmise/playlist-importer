@@ -99,6 +99,35 @@ def obtener_servicio() -> Resource:
     return build('youtube', 'v3', credentials=generar_credenciales())
 
 
+def obtener_artista_del_video(item_de_playlist: dict) -> str:
+
+    artista_del_video: str = str()
+    partes_del_titulo: list = item_de_playlist.get('snippet', dict()).get('title', str()).split('-')
+
+    if len(partes_del_titulo) == 1:
+        partes_del_titulo = item_de_playlist.get('snippet', dict()).get('videoOwnerChannelTitle', str()).split('-')
+        artista_del_video = partes_del_titulo[0].strip()
+
+    else:
+        artista_del_video = partes_del_titulo[0].strip()
+
+    return artista_del_video
+
+
+def obtener_nombre_del_video(item_de_playlist: dict) -> str:
+
+    nombre_del_video: str = str()
+    partes_del_titulo: list = item_de_playlist.get('snippet', dict()).get('title', str()).split('-')
+
+    if len(partes_del_titulo) == 1:
+        nombre_del_video = item_de_playlist.get('snippet', dict()).get('title', str())
+
+    else:
+        nombre_del_video = partes_del_titulo[1].strip()
+
+    return nombre_del_video
+
+
 def crear_criterio_de_busqueda(elemento_a_buscar: str, cantidad_de_resultados: int) -> Namespace:
 
     argparser: ArgumentParser = _CreateArgumentParser()
@@ -163,8 +192,8 @@ def obtener_playlists(servicio: Resource) -> list:
             mine=True,
             maxResults=10
         ).execute()
-    except HttpError:
-        print(f'Un error ocurrió con la petición: {HttpError}')
+    except HttpError as err:
+        print(f'Un error ocurrió con la petición: {err}')
     except ConnectError as err:
         print(f'Un error ocurrió con la conexión a internet: {err}')
     except Exception as err:
@@ -186,21 +215,35 @@ def obtener_playlists(servicio: Resource) -> list:
 
 def obtener_playlist(servicio: Resource, id_playlist: str) -> list:
 
-    respuesta: dict = dict()
-    items_de_playlist = list()
+    playlist: dict = dict()
+    playlist_formateada = list()
 
-    respuesta = servicio.playlistItems().list(
-        part="snippet",
-        playlistId=id_playlist         
-    ).execute()
+    try:
+        playlist = servicio.playlistItems().list(
+            part='snippet',
+            playlistId=id_playlist,
+            maxResults=50      
+        ).execute()
+    except HttpError as err:
+        print(f'Un error ocurrió con la petición: {err}')
+    except ConnectError as err:
+        print(f'Un error ocurrió con la conexión a internet: {err}')
+    except Exception as err:
+        print(f'Un error ocurrió: {err}')
 
-    for item in respuesta.get('items', list()):
-        items_de_playlist.append({
-            'nombre_de_cancion': item.get('snippet', dict()).get('title', str()),
-            'artista': item.get('snippet', dict()).get('videoOwnerChannelTitle', str()).split('-')[0].strip()
-        })
+    if playlist:
+        for item in playlist.get('items', list()):
+            playlist_formateada.append({
+                'id': item.get('id', ''),
+                'nombre_de_cancion': obtener_nombre_del_video(item),
+                'artista': obtener_artista_del_video(item),
+                'duracion_en_ms': int(),
+                'album': str(),
+                'href': str(),
+                'uri': str()            
+            })
 
-    return items_de_playlist
+    return playlist_formateada
 
 
 def crear_playlist(servicio: Resource, titulo: str, descripcion: str, privacidad: str) -> list:
@@ -256,7 +299,7 @@ def agregar_elemento_a_playlist(servicio: Resource, id_playlist: str, video: dic
 youtube = obtener_servicio()
 
 playlists = obtener_playlists(youtube)
-
+playlist = obtener_playlist(youtube, playlists[0].get('id', ''))
 
 # This code creates a new, private playlist in the authorized user's channel.
 # playlists_insert_response = youtube.playlists().insert(

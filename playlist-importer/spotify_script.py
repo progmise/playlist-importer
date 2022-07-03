@@ -168,9 +168,9 @@ def obtener_playlist(servicio: Spotify, id_playlist: str) -> list:
             playlist_formateada.append({
                 'id': item.track.id,
                 'nombre_de_cancion': item.track.name,
+                'artista': item.track.artists[0].name,
                 'duracion_en_ms': item.track.duration_ms,
                 'album': item.track.album.name,
-                'artista': item.track.artists[0].name,
                 'href': item.track.external_urls.get('spotify', str()),
                 'uri': item.track.uri
             })
