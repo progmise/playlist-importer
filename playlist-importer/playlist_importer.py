@@ -305,6 +305,14 @@ def mostrar_playlists_de_youtube(servicio: Resource) -> None:
     mostrar_lista_de_diccionarios(playlists, 'Listas de reproducción', 'playlist')    
 
 
+def crear_playlist_de_youtube(servicio: Resource) -> None:
+
+    nombre_de_playlist: str = validar_texto_ingresado('Ingrese el nombre de la nueva playlist')
+    descripcion: str = validar_texto_ingresado('Ingrese la descripción de la nueva playlist')
+
+    youtube.crear_playlist(servicio, nombre_de_playlist, descripcion)
+
+
 def iniciar_menu_de_spotify() -> None:
 
     opciones: list = [
@@ -380,12 +388,11 @@ def iniciar_menu_de_youtube() -> None:
             se_cerro_sesion = False
 
         if opcion == 1:
-            # crear_playlist_de_youtube(servicio)
+            crear_playlist_de_youtube(servicio)
 
             sleep(1)
 
-            # mostrar_playlists_de_youtube(servicio) 
-            pass           
+            mostrar_playlists_de_youtube(servicio)          
 
         elif opcion == 2:
             mostrar_playlists_de_youtube(servicio)
