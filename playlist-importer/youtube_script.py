@@ -246,12 +246,14 @@ def obtener_playlist(servicio: Resource, id_playlist: str) -> list:
     return playlist_formateada
 
 
-def crear_playlist(servicio: Resource, titulo: str, descripcion: str, privacidad: str) -> list:
+def crear_playlist(servicio: Resource, titulo: str, 
+                   descripcion: str, privacidad: str = 'public') -> dict:
 
-    respuesta: dict = dict()
+    playlist: dict = dict()
+    playlist_creada: dict = dict()
 
     try:
-        respuesta = servicio.playlists().insert(
+        playlist = servicio.playlists().insert(
             part='snippet, status',
             body=dict(
                 snippet=dict(
@@ -263,11 +265,24 @@ def crear_playlist(servicio: Resource, titulo: str, descripcion: str, privacidad
                 )
             )
         ).execute()
+    except HttpError as err:
+        print(f'Un error ocurrió con la petición: {err}')
+    except ConnectError as err:
+        print(f'Un error ocurrió con la conexión a internet: {err}')
+    except Exception as err:
+        print(f'Un error ocurrió: {err}') 
 
-    except (HttpError, Error):
-        print(f'Un error ocurrió: {Error}')     
+    if playlist:
+        playlist_creada = {
+            'id': playlist.get('id', str()),
+            'nombre': playlist.get('snippet', dict()).get('title', ''),
+            'descripcion': playlist.get('snippet', dict()).get('description', ''),
+            'href': str(),
+            'uri': str(),
+            'cantidad_de_canciones': int()
+        }     
 
-    return respuesta.get('id', str())
+    return playlist_creada
 
 
 def agregar_elemento_a_playlist(servicio: Resource, id_playlist: str, video: dict) -> Any:
@@ -298,8 +313,10 @@ def agregar_elemento_a_playlist(servicio: Resource, id_playlist: str, video: dic
 
 youtube = obtener_servicio()
 
-playlists = obtener_playlists(youtube)
-playlist = obtener_playlist(youtube, playlists[0].get('id', ''))
+# playlists = obtener_playlists(youtube)
+# playlist = obtener_playlist(youtube, playlists[0].get('id', ''))
+
+playlist_creada = crear_playlist(youtube, 'Una nueva playlist', 'Prueba desde Python')
 
 # This code creates a new, private playlist in the authorized user's channel.
 # playlists_insert_response = youtube.playlists().insert(
