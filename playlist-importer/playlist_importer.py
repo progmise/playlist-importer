@@ -390,7 +390,7 @@ def iniciar_menu_de_youtube() -> None:
         if opcion == 1:
             crear_playlist_de_youtube(servicio)
 
-            sleep(1)
+            sleep(5)
 
             mostrar_playlists_de_youtube(servicio)          
 
