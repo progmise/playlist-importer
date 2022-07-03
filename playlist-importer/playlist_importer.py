@@ -293,7 +293,7 @@ def mostrar_videos_de_playlist_de_youtube(servicio: Resource) -> None:
 
     opcion = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
 
-    playlist = spotify.obtener_playlist(servicio, playlists[opcion].get('id', ''))
+    playlist = youtube.obtener_playlist(servicio, playlists[opcion].get('id', ''))
 
     mostrar_lista_de_diccionarios(playlist, 'Lista de videos', 'video')
 
