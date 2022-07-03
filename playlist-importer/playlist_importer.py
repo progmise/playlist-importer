@@ -358,6 +358,23 @@ def agregar_un_elemento_a_una_playlist_de_youtube(servicio: Resource) -> None:
         print('\n¡Hubo un error y no se agregaron los elementos a la playlist!\n')
 
 
+def exportar_playlist_de_youtube(servicio: Resource) -> None:
+    
+    playlists: list = list()
+    playlist: list = list()
+    nombres_de_playlists: list = list()
+    opcion: int = int()
+
+    playlists = youtube.obtener_playlists(servicio)
+    nombres_de_playlists = [x.get('nombre', str()) for x in playlists]
+
+    opcion = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
+
+    playlist = youtube.obtener_playlist(servicio, playlists[opcion].get('id', str()))
+
+    exportar_playlist_a_csv(playlist, 'data\\youtube_to_spotify.csv')
+
+
 def iniciar_menu_de_spotify() -> None:
 
     opciones: list = [
@@ -455,8 +472,7 @@ def iniciar_menu_de_youtube() -> None:
             agregar_un_elemento_a_una_playlist_de_youtube(servicio)
 
         elif opcion == 5:
-            # exportar_playlist_de_youtube(servicio)
-            pass   
+            exportar_playlist_de_youtube(servicio)  
 
         elif opcion == 6:
             eliminar_archivo(youtube.ARCHIVO_TOKEN)
