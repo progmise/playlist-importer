@@ -323,24 +323,14 @@ def exportar_playlist_a_csv(playlist: list, ruta_de_archivo: str) -> None:
     escribir_archivo_csv(ruta_de_archivo, encabezados, canciones)
 
 
-def exportar_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
+def exportar_playlist_de_spotify(servicio: Spotify, playlist_a_exportar: dict) -> None:
     
-    playlists: list = list()
-    playlist: list = list()
-    nombres_de_playlists: list = list()
-    opcion: int = int()
-
-    playlists = spotify.obtener_playlists(servicio, usuario.get('id', str()))
-    nombres_de_playlists = [x.get('nombre', str()) for x in playlists]
-
-    opcion = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
-
-    playlist = spotify.obtener_playlist(servicio, playlists[opcion].get('id', str()))
+    playlist: list = spotify.obtener_playlist(servicio, playlist_a_exportar.get('id', str()))
 
     for item in playlist:
         item['nombre_de_cancion'] = normalizar_nombre_de_cancion(item.get('nombre_de_cancion', str()))
-        item['nombre_de_playlist'] = playlists[opcion].get('nombre', str())
-        item['descripcion_de_playlist'] = playlists[opcion].get('descripcion', str())
+        item['nombre_de_playlist'] = playlist_a_exportar.get('nombre', str())
+        item['descripcion_de_playlist'] = playlist_a_exportar.get('descripcion', str())
 
     exportar_playlist_a_csv(playlist, 'data\\spotify_to_youtube.csv')
 
@@ -456,24 +446,14 @@ def agregar_un_elemento_a_una_playlist_de_youtube(servicio: Resource) -> None:
         print('\n¡Hubo un error y no se agregaron los elementos a la playlist!\n')
 
 
-def exportar_playlist_de_youtube(servicio: Resource) -> None:
+def exportar_playlist_de_youtube(servicio: Resource, playlist_a_exportar: dict) -> None:
     
-    playlists: list = list()
-    playlist: list = list()
-    nombres_de_playlists: list = list()
-    opcion: int = int()
-
-    playlists = youtube.obtener_playlists(servicio)
-    nombres_de_playlists = [x.get('nombre', str()) for x in playlists]
-
-    opcion = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
-
-    playlist = youtube.obtener_playlist(servicio, playlists[opcion].get('id', str()))
+    playlist: list = youtube.obtener_playlist(servicio, playlist_a_exportar.get('id', str()))
 
     for item in playlist:
         item['nombre_de_cancion'] = normalizar_nombre_de_cancion(item.get('nombre_de_cancion', str()))
-        item['nombre_de_playlist'] = playlists[opcion].get('nombre', str())
-        item['descripcion_de_playlist'] = playlists[opcion].get('descripcion', str())
+        item['nombre_de_playlist'] = playlist_a_exportar.get('nombre', str())
+        item['descripcion_de_playlist'] = playlist_a_exportar.get('descripcion', str())
 
     exportar_playlist_a_csv(playlist, 'data\\youtube_to_spotify.csv')
 
@@ -514,6 +494,58 @@ def importar_playlist_a_spotify(servicio: Spotify, usuario: dict) -> None:
 
     else:
         print('\n¡Hubo un error y no se importó toda la playlist a Spotify!\n')
+
+
+def exportar_playlist(servicio_de_spotify: Spotify, usuario: dict, 
+                      servicio_de_youtube: Resource, desde: str) -> None:
+
+    nombres_de_playlists_de_spotify: list = list()
+    nombres_de_playlists_de_youtube: list = list()
+    playlists_de_spotify: list = spotify.obtener_playlists(
+        servicio_de_spotify, 
+        usuario.get('id', str())
+    )
+    playlists_de_youtube: list = youtube.obtener_playlists(servicio_de_youtube)
+    opcion_de_playlist: int = int()
+    nombre_de_playlist_a_exportar: str = str()
+
+    if desde == 'spotify':
+        nombres_de_playlists_de_spotify = [x.get('nombre', str()) for x in playlists_de_spotify]
+
+        opcion_de_playlist = int(obtener_entrada_usuario(nombres_de_playlists_de_spotify)) - 1
+
+        nombre_de_playlist_a_exportar = playlists_de_spotify[opcion_de_playlist].get('nombre', str())
+
+        nombres_de_playlists_de_youtube = [x.get('nombre', str()) for x in playlists_de_youtube]
+
+        if nombre_de_playlist_a_exportar not in nombres_de_playlists_de_youtube:
+            exportar_playlist_de_spotify(
+                servicio_de_spotify,
+                playlists_de_spotify[opcion_de_playlist]
+            )
+            importar_playlist_a_youtube(servicio_de_youtube)
+
+        else:
+            print(f"\n¡La playlist '{nombre_de_playlist_a_exportar}', ya existe en YouTube")
+
+    elif desde == 'youtube':
+        nombres_de_playlists_de_youtube = [x.get('nombre', str()) for x in playlists_de_youtube]
+
+        opcion_de_playlist = int(obtener_entrada_usuario(nombres_de_playlists_de_youtube)) - 1
+
+        nombre_de_playlist_a_exportar = playlists_de_youtube[opcion_de_playlist].get('nombre', str())
+
+        nombres_de_playlists_de_spotify = [x.get('nombre', str()) for x in playlists_de_spotify]
+
+        if nombre_de_playlist_a_exportar not in nombres_de_playlists_de_spotify:
+            exportar_playlist_de_youtube(
+                servicio_de_youtube,
+                playlists_de_youtube[opcion_de_playlist]
+            )
+            importar_playlist_a_spotify(servicio_de_spotify, usuario)
+
+        else:
+            print(f"\n¡La playlist '{nombre_de_playlist_a_exportar}', ya existe en Spotify")     
 
 
 def iniciar_menu_de_spotify() -> None:
@@ -562,8 +594,7 @@ def iniciar_menu_de_spotify() -> None:
         elif opcion == 5:
             servicio_de_youtube: Resource = youtube.obtener_servicio()
 
-            exportar_playlist_de_spotify(servicio_de_spotify, usuario)
-            importar_playlist_a_youtube(servicio_de_youtube)
+            exportar_playlist(servicio_de_spotify, usuario, servicio_de_youtube, 'spotify')
 
         elif opcion == 6:
             eliminar_archivo(spotify.ARCHIVO_TEKORE)
@@ -619,8 +650,7 @@ def iniciar_menu_de_youtube() -> None:
             servicio_de_spotify: Spotify = spotify.obtener_servicio()
             usuario: dict = spotify.obtener_usuario_actual(servicio_de_spotify)
 
-            exportar_playlist_de_youtube(servicio_de_youtube)
-            importar_playlist_a_spotify(servicio_de_spotify, usuario)
+            exportar_playlist(servicio_de_spotify, usuario, servicio_de_youtube, 'youtube')
 
         elif opcion == 6:
             eliminar_archivo(youtube.ARCHIVO_TOKEN)
