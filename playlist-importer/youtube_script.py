@@ -1,7 +1,6 @@
-from argparse import ArgumentParser, Namespace
 import os
-import csv
 
+from argparse import ArgumentParser, Namespace
 from io import TextIOWrapper
 from typing import Any
 from googleapiclient.discovery import Resource, build
@@ -9,6 +8,7 @@ from googleapiclient.errors import HttpError, Error
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from httpx import ConnectError
 from oauth2client.tools import argparser, _CreateArgumentParser
 
 SCOPES = [
@@ -16,7 +16,7 @@ SCOPES = [
 ]
 
 # Archivo generado para la API
-ARCHIVO_CLIENT_SECRET = 'resources//credentials.json'
+ARCHIVO_CLIENT_SECRET = 'resources\\credentials.json'
 ARCHIVO_TOKEN = 'resources\\token.json'
 
 FILENAME = "songs.csv"
@@ -154,20 +154,34 @@ def buscar_en_youtube(servicio: Resource, opciones: Namespace) -> tuple:
 
 def obtener_playlists(servicio: Resource) -> list:
 
-    respuesta: dict = dict()
-    playlists: list = list()
+    playlists: dict = dict()
+    playlists_formateadas: list = list()
 
-    respuesta = servicio.playlists().list(
-        part="snippet",
-        mine=True
-    ).execute()
+    try:
+        playlists = servicio.playlists().list(
+            part='snippet',
+            mine=True,
+            maxResults=10
+        ).execute()
+    except HttpError:
+        print(f'Un error ocurrió con la petición: {HttpError}')
+    except ConnectError as err:
+        print(f'Un error ocurrió con la conexión a internet: {err}')
+    except Exception as err:
+        print(f'Un error ocurrió: {err}')
 
-    for item in respuesta.get('items', list()):
-        playlists.append({
-            'id': item.get('id', str())
-        })
+    if playlists:
+        for item in playlists.get('items', list()):
+            playlists_formateadas.append({
+                'id': item.get('id', str()),
+                'nombre': item.get('snippet', dict()).get('title', ''),
+                'descripcion': item.get('snippet', dict()).get('description', ''),
+                'href': str(),
+                'uri': str(),
+                'cantidad_de_canciones': int()
+            })        
 
-    return playlists
+    return playlists_formateadas
 
 
 def obtener_playlist(servicio: Resource, id_playlist: str) -> list:
@@ -239,7 +253,9 @@ def agregar_elemento_a_playlist(servicio: Resource, id_playlist: str, video: dic
     return respuesta
 
 
-# youtube = obtener_servicio()
+youtube = obtener_servicio()
+
+playlists = obtener_playlists(youtube)
 
 
 # This code creates a new, private playlist in the authorized user's channel.
