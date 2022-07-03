@@ -281,6 +281,23 @@ def exportar_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
     exportar_playlist_a_csv(playlist, 'data\\spotify_to_youtube.csv')
 
 
+def mostrar_videos_de_playlist_de_youtube(servicio: Resource) -> None:
+
+    playlists: list = list()
+    playlist: list = list()
+    nombres_de_playlists: list = list()
+    opcion: int = int()
+
+    playlists = youtube.obtener_playlists(servicio)
+    nombres_de_playlists = [x.get('nombre', '') for x in playlists]
+
+    opcion = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
+
+    playlist = spotify.obtener_playlist(servicio, playlists[opcion].get('id', ''))
+
+    mostrar_lista_de_diccionarios(playlist, 'Lista de videos', 'video')
+
+
 def mostrar_playlists_de_youtube(servicio: Resource) -> None:
 
     playlists: list = youtube.obtener_playlists(servicio)
