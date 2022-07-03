@@ -116,10 +116,10 @@ def eliminar_archivo(ruta_de_archivo: str) -> None:
 
     if os.path.exists(ruta_de_archivo):
         os.remove(ruta_de_archivo)
-        print('El archivo fue eliminado satisfactoriamente')
+        print('\nEl archivo fue eliminado satisfactoriamente\n')
 
     else:
-        print('¡El archivo no existe!')
+        print('\n¡El archivo no existe!\n')
 
 
 def leer_archivo_csv(ruta_de_archivo: str) -> 'list[str]':
