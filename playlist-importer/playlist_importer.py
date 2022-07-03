@@ -1,15 +1,13 @@
 import csv
 import os
+import spotify_script as spotify
+import youtube_script as youtube
 
+from googleapiclient.discovery import Resource
 from io import TextIOWrapper
 from re import sub
 from tekore import Spotify
 from time import sleep
-
-from spotify_script import ARCHIVO_TEKORE
-from spotify_script import agregar_canciones_a_playlist, buscar_cancion
-from spotify_script import crear_playlist, obtener_playlist, obtener_playlists
-from spotify_script import obtener_servicio, obtener_usuario_actual
 
 
 def es_texto_valido(texto: str) -> bool:
@@ -181,19 +179,19 @@ def mostrar_canciones_de_playlist_de_spotify(servicio: Spotify, usuario: dict) -
     nombres_de_playlists: list = list()
     opcion: int = int()
 
-    playlists = obtener_playlists(servicio, usuario.get('id', ''))
+    playlists = spotify.obtener_playlists(servicio, usuario.get('id', ''))
     nombres_de_playlists = [x.get('nombre', '') for x in playlists]
 
     opcion = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
 
-    playlist = obtener_playlist(servicio, playlists[opcion].get('id', ''))
+    playlist = spotify.obtener_playlist(servicio, playlists[opcion].get('id', ''))
 
     mostrar_lista_de_diccionarios(playlist, 'Lista de canciones', 'canción')
 
 
 def mostrar_playlists_de_spotify(servicio: Spotify, usuario: dict) -> None:
 
-    playlists: list = obtener_playlists(servicio, usuario.get('id', ''))
+    playlists: list = spotify.obtener_playlists(servicio, usuario.get('id', ''))
 
     mostrar_lista_de_diccionarios(playlists, 'Listas de reproducción', 'playlist')
 
@@ -203,7 +201,7 @@ def crear_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
     nombre_de_playlist: str = validar_texto_ingresado('Ingrese el nombre de la nueva playlist')
     descripcion: str = validar_texto_ingresado('Ingrese la descripción de la nueva playlist')
 
-    crear_playlist(servicio, usuario.get('id', ''), nombre_de_playlist, descripcion)
+    spotify.crear_playlist(servicio, usuario.get('id', ''), nombre_de_playlist, descripcion)
 
 
 def agregar_una_cancion_a_una_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
@@ -217,7 +215,7 @@ def agregar_una_cancion_a_una_playlist_de_spotify(servicio: Spotify, usuario: di
     flag_agregar_canciones: bool = True
     se_agregaron_las_canciones: bool = False
 
-    playlists = obtener_playlists(servicio, usuario.get('id', ''))
+    playlists = spotify.obtener_playlists(servicio, usuario.get('id', ''))
     nombres_de_playlists = [x.get('nombre', '') for x in playlists]
 
     opcion_de_playlist = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
@@ -227,7 +225,7 @@ def agregar_una_cancion_a_una_playlist_de_spotify(servicio: Spotify, usuario: di
         nombre_de_cancion: str = validar_texto_ingresado('Ingrese el nombre de la canción')
         artista: str = validar_texto_ingresado('Ingrese el artista de la canción')
 
-        canciones_encontradas: list = buscar_cancion(servicio, f'{nombre_de_cancion} {artista}')
+        canciones_encontradas: list = spotify.buscar_cancion(servicio, f'{nombre_de_cancion} {artista}')
         nombres_de_canciones: list = [
             f'{x.get("nombre_de_cancion", "")} - {x.get("artista", "")}' for x in canciones_encontradas
         ]
@@ -243,7 +241,7 @@ def agregar_una_cancion_a_una_playlist_de_spotify(servicio: Spotify, usuario: di
 
     uris_de_canciones = [x.get('uri', '') for x in canciones_a_agregar]
 
-    se_agregaron_las_canciones = agregar_canciones_a_playlist(
+    se_agregaron_las_canciones = spotify.agregar_canciones_a_playlist(
         servicio, 
         playlists[opcion_de_playlist].get('id', ''), 
         uris_de_canciones
@@ -273,12 +271,12 @@ def exportar_playlist_de_spotify(servicio: Spotify, usuario: dict) -> None:
     nombres_de_playlists: list = list()
     opcion: int = int()
 
-    playlists = obtener_playlists(servicio, usuario.get('id', ''))
+    playlists = spotify.obtener_playlists(servicio, usuario.get('id', ''))
     nombres_de_playlists = [x.get('nombre', '') for x in playlists]
 
     opcion = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
 
-    playlist = obtener_playlist(servicio, playlists[opcion].get('id', ''))
+    playlist = spotify.obtener_playlist(servicio, playlists[opcion].get('id', ''))
 
     exportar_playlist_a_csv(playlist, 'data\\spotify_to_youtube.csv')
 
@@ -296,16 +294,16 @@ def iniciar_menu_de_spotify() -> None:
     ]
 
     se_cerro_sesion: bool = False
-    servicio: Spotify = obtener_servicio()
-    usuario: dict = obtener_usuario_actual(servicio)
+    servicio: Spotify = spotify.obtener_servicio()
+    usuario: dict = spotify.obtener_usuario_actual(servicio)
 
     opcion: int = int(obtener_entrada_usuario(opciones))
 
     while opcion != 7:
 
         if se_cerro_sesion:
-            servicio: Spotify = obtener_servicio()
-            usuario: dict = obtener_usuario_actual(servicio)
+            servicio = spotify.obtener_servicio()
+            usuario = spotify.obtener_usuario_actual(servicio)
             se_cerro_sesion = False
 
         if opcion == 1:
@@ -328,7 +326,61 @@ def iniciar_menu_de_spotify() -> None:
             exportar_playlist_de_spotify(servicio, usuario)      
 
         elif opcion == 6:
-            eliminar_archivo(ARCHIVO_TEKORE)
+            eliminar_archivo(spotify.ARCHIVO_TEKORE)
+            se_cerro_sesion = True
+
+        opcion = int(obtener_entrada_usuario(opciones))    
+
+
+def iniciar_menu_de_youtube() -> None:
+
+    opciones: list = [
+        'Crear nueva playlist',
+        'Listar playlists',
+        'Listar videos de playlist',
+        'Agregar video a una playlist',
+        'Exportar playlist a Spotify',
+        'Cerrar sesión',
+        'Salir'
+    ]
+
+    se_cerro_sesion: bool = False
+    servicio: Resource = youtube.obtener_servicio()
+
+    opcion: int = int(obtener_entrada_usuario(opciones))
+
+    while opcion != 7:
+
+        if se_cerro_sesion:
+            servicio = youtube.obtener_servicio()
+            se_cerro_sesion = False
+
+        if opcion == 1:
+            # crear_playlist_de_youtube(servicio)
+
+            sleep(1)
+
+            # mostrar_playlists_de_youtube(servicio) 
+            pass           
+
+        elif opcion == 2:
+            # mostrar_playlists_de_youtube(servicio)
+            pass
+
+        elif opcion == 3:
+            # mostrar_videos_de_playlist_de_youtube(servicio)
+            pass
+
+        elif opcion == 4:
+            # agregar_un_elemento_a_una_playlist_de_youtube(servicio)
+            pass
+
+        elif opcion == 5:
+            # exportar_playlist_de_youtube(servicio)
+            pass   
+
+        elif opcion == 6:
+            eliminar_archivo(youtube.ARCHIVO_TOKEN)
             se_cerro_sesion = True
 
         opcion = int(obtener_entrada_usuario(opciones))    
@@ -351,7 +403,7 @@ def main() -> None:
             iniciar_menu_de_spotify()
 
         elif opcion == 2:
-            pass
+            iniciar_menu_de_youtube()
 
         elif opcion == 3:
             pass         
