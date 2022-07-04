@@ -1,12 +1,17 @@
 import csv
+import genius_script as genius
 import os
 import spotify_script as spotify
 import youtube_script as youtube
 
 from copy import deepcopy
 from googleapiclient.discovery import Resource
-from io import TextIOWrapper
+from httpx import ConnectError
+from io import BufferedWriter, BytesIO, TextIOWrapper
+from lyricsgenius import Genius
 from re import findall, sub, IGNORECASE
+from requests import post, Response
+from shutil import copyfileobj
 from tekore import Spotify
 from time import sleep
 
@@ -148,6 +153,36 @@ def obtener_valores_repetidos(primer_lista_de_elementos: list,
     return elementos_repetidos
 
 
+def obtener_nube_de_palabras(texto: str) -> None:
+
+    respuesta: Response = None
+
+    try:
+        respuesta = post('https://quickchart.io/wordcloud', json={
+            'format': 'png',
+            'width': 1000,
+            'height': 1000,
+            'fontScale': 15,
+            'scale': 'linear',
+            'removeStopwords': True,
+            'minWordLength': 4,
+            'text': texto,
+        })
+    except ConnectError as err:
+        print(f'Un error ocurrió con la conexión a internet: {err}')
+    except Exception as err:
+        print(f'Un error ocurrió: {err}')
+
+    if not respuesta is None:
+        escribir_archivo_binario(
+            'images\\nube_de_palabras.png', 
+            respuesta.content
+        )
+
+    else:
+        print('\n¡No se pudo crear la nube de palabras!')
+
+
 def filtrar_elementos_no_repetidos(elementos_a_copiar: list, 
                                    elementos_a_comparar: list) -> list:
 
@@ -206,7 +241,7 @@ def leer_archivo_csv(ruta_de_archivo: str) -> 'list[str]':
                 datos.append(dato)
 
     except IOError:
-        print('\nNo se pudo leer el archivo: ', ruta_de_archivo)
+        print(f'\nNo se pudo leer el archivo: {ruta_de_archivo}')
     
     finally:
         archivo.close()
@@ -226,10 +261,27 @@ def escribir_archivo_csv(ruta_de_archivo: str, encabezados: list, contenido: lis
             csv_escritor.writerows(contenido)
 
     except IOError:
-        print('\nNo se pudo escribir el archivo: ', ruta_de_archivo)
+        print(f'\nNo se pudo escribir el archivo: {ruta_de_archivo}')
 
     finally:
         archivo.close()     
+
+
+def escribir_archivo_binario(ruta_de_archivo: str, contenido: str) -> None:
+
+    archivo_bytes: BytesIO = BytesIO(contenido)
+
+    objetivo: BufferedWriter = open(ruta_de_archivo, 'wb') 
+
+    try:
+        with archivo_bytes, objetivo:
+            copyfileobj(archivo_bytes, objetivo)      
+
+    except IOError:
+        print(f'\nNo se pudo escribir el archivo: {ruta_de_archivo}')
+
+    finally:
+        objetivo.close()  
 
 
 def normalizar_nombre_de_cancion(nombre_de_cancion: str) -> str:
@@ -619,36 +671,6 @@ def exportar_playlist(servicio_de_spotify: Spotify, usuario: dict,
             print(f"\n¡La playlist '{nombre_de_playlist_a_exportar}', ya existe en Spotify")     
 
 
-def sincronizar_playlist_de_youtube(servicio: Resource, 
-                                    elementos_a_sincronizar: list, id_playlist: str) -> None:
-
-    exportar_playlist_a_csv(elementos_a_sincronizar, 'data\\sync_youtube.csv')
-
-    videos_a_agregar: list = list()
-    items_de_playlist: list = procesar_archivo_csv('data\\sync_youtube.csv')
-    se_sincronizaron_todos_los_elementos: bool = False
-
-    for item in items_de_playlist:
-        canciones_encontradas: list = youtube.buscar_video(
-            servicio, 
-            f'{item.get("nombre_de_cancion", str())} {item.get("artista", str())}'
-        )
-
-        videos_a_agregar.append(canciones_encontradas[0])
-
-    se_sincronizaron_todos_los_elementos = youtube.agregar_elementos_a_playlist(
-        servicio, 
-        id_playlist, 
-        videos_a_agregar
-    )
-
-    if se_sincronizaron_todos_los_elementos:
-        print('\n¡Se sincronizó satisfactoriamente la playlist de YouTube!\n')
-
-    else:
-        print('\n¡Hubo un error y no se sincronizó la playlist a YouTube!\n')
-
-
 def sincronizar_playlist_de_spotify(servicio: Spotify, 
                                     elementos_a_sincronizar: list, id_playlist: str) -> None:
 
@@ -682,6 +704,112 @@ def sincronizar_playlist_de_spotify(servicio: Spotify,
         print('\n¡Hubo un error y no se sincronizó la playlist a Spotify!\n')
 
 
+def sincronizar_playlist_de_youtube(servicio: Resource, 
+                                    elementos_a_sincronizar: list, id_playlist: str) -> None:
+
+    exportar_playlist_a_csv(elementos_a_sincronizar, 'data\\sync_youtube.csv')
+
+    videos_a_agregar: list = list()
+    items_de_playlist: list = procesar_archivo_csv('data\\sync_youtube.csv')
+    se_sincronizaron_todos_los_elementos: bool = False
+
+    for item in items_de_playlist:
+        canciones_encontradas: list = youtube.buscar_video(
+            servicio, 
+            f'{item.get("nombre_de_cancion", str())} {item.get("artista", str())}'
+        )
+
+        videos_a_agregar.append(canciones_encontradas[0])
+
+    se_sincronizaron_todos_los_elementos = youtube.agregar_elementos_a_playlist(
+        servicio, 
+        id_playlist, 
+        videos_a_agregar
+    )
+
+    if se_sincronizaron_todos_los_elementos:
+        print('\n¡Se sincronizó satisfactoriamente la playlist de YouTube!\n')
+
+    else:
+        print('\n¡Hubo un error y no se sincronizó la playlist a YouTube!\n')
+
+
+def armar_nube_de_palabras_de_spotify(servicio_de_genius: Genius, 
+                                      servicio_de_spotify: Spotify, usuario: dict) -> None:
+
+    playlists: list = list()
+    playlist: list = list()
+    nombres_de_playlists: list = list()
+    letra_de_canciones: list = list()
+    opcion: int = int()
+
+    playlists = spotify.obtener_playlists(servicio_de_spotify, usuario.get('id', str()))
+    nombres_de_playlists = [x.get('nombre', str()) for x in playlists]
+
+    opcion = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
+
+    playlist = spotify.obtener_playlist(servicio_de_spotify, playlists[opcion].get('id', str()))
+
+    for item in playlist:
+        cancion: dict = dict()
+        letra_de_cancion: str = str()
+
+        item['nombre_de_cancion'] = normalizar_nombre_de_cancion(item.get('nombre_de_cancion', str()))
+
+        cancion = genius.buscar_cancion(
+            servicio_de_genius,
+            item.get('nombre_de_cancion', str()),
+            item.get('artista', str())
+        )
+
+        letra_de_cancion = genius.obtener_letra(
+            servicio_de_genius,
+            cancion.get('id', str())
+        )
+
+        letra_de_canciones.append(letra_de_cancion)
+
+    obtener_nube_de_palabras(' '.join(letra_de_canciones))
+
+
+def armar_nube_de_palabras_de_youtube(servicio_de_genius: Genius,
+                                      servicio_de_youtube: Resource) -> None:
+
+    playlists: list = list()
+    playlist: list = list()
+    nombres_de_playlists: list = list()
+    letra_de_canciones: list = list()
+    opcion: int = int()
+
+    playlists = youtube.obtener_playlists(servicio_de_youtube)
+    nombres_de_playlists = [x.get('nombre', str()) for x in playlists]
+
+    opcion = int(obtener_entrada_usuario(nombres_de_playlists)) - 1
+
+    playlist = youtube.obtener_playlist(servicio_de_youtube, playlists[opcion].get('id', str()))
+
+    for item in playlist:
+        cancion: dict = dict()
+        letra_de_cancion: str = str()
+
+        item['nombre_de_cancion'] = normalizar_nombre_de_cancion(item.get('nombre_de_cancion', str()))
+
+        cancion = genius.buscar_cancion(
+            servicio_de_genius,
+            item.get('nombre_de_cancion', str()),
+            item.get('artista', str())
+        )
+
+        letra_de_cancion = genius.obtener_letra(
+            servicio_de_genius,
+            cancion.get('id', str()),
+        )
+
+        letra_de_canciones.append(letra_de_cancion)
+
+    obtener_nube_de_palabras(' '.join(letra_de_canciones))
+
+
 def iniciar_menu_de_spotify() -> None:
 
     opciones: list = [
@@ -690,6 +818,7 @@ def iniciar_menu_de_spotify() -> None:
         'Listar canciones de playlist',
         'Agregar canción a una playlist',
         'Exportar playlist a Youtube',
+        'Armar nube de palabras',
         'Cerrar sesión',
         'Volver'
     ]
@@ -702,7 +831,7 @@ def iniciar_menu_de_spotify() -> None:
 
     opcion: int = int(obtener_entrada_usuario(opciones))
 
-    while opcion != 7:
+    while opcion != 8:
 
         if se_cerro_sesion:
             servicio_de_spotify = spotify.obtener_servicio()
@@ -731,6 +860,15 @@ def iniciar_menu_de_spotify() -> None:
             exportar_playlist(servicio_de_spotify, usuario, servicio_de_youtube, 'spotify')
 
         elif opcion == 6:
+            servicio_de_genius: Genius = Genius(genius.GENIUS_TOKEN)
+
+            armar_nube_de_palabras_de_spotify(
+                servicio_de_genius, 
+                servicio_de_spotify, 
+                usuario
+            )
+
+        elif opcion == 7:
             eliminar_archivo(spotify.ARCHIVO_TEKORE)
             se_cerro_sesion = True
 
@@ -747,6 +885,7 @@ def iniciar_menu_de_youtube() -> None:
         'Listar videos de playlist',
         'Agregar video a una playlist',
         'Exportar playlist a Spotify',
+        'Armar nube de palabras',
         'Cerrar sesión',
         'Volver'
     ]
@@ -758,7 +897,7 @@ def iniciar_menu_de_youtube() -> None:
 
     opcion: int = int(obtener_entrada_usuario(opciones))
 
-    while opcion != 7:
+    while opcion != 8:
 
         if se_cerro_sesion:
             servicio_de_youtube = youtube.obtener_servicio()
@@ -787,6 +926,14 @@ def iniciar_menu_de_youtube() -> None:
             exportar_playlist(servicio_de_spotify, usuario, servicio_de_youtube, 'youtube')
 
         elif opcion == 6:
+            servicio_de_genius: Genius = Genius(genius.GENIUS_TOKEN)
+
+            armar_nube_de_palabras_de_youtube(
+                servicio_de_genius,
+                servicio_de_youtube
+            )
+
+        elif opcion == 7:
             eliminar_archivo(youtube.ARCHIVO_TOKEN)
             se_cerro_sesion = True
 
