@@ -3,6 +3,7 @@ import os
 import spotify_script as spotify
 import youtube_script as youtube
 
+from copy import deepcopy
 from googleapiclient.discovery import Resource
 from io import TextIOWrapper
 from re import findall, sub, IGNORECASE
@@ -110,6 +111,76 @@ def obtener_entrada_usuario(opciones: list) -> str:
     opcion = validar_opcion_ingresada(opciones)
 
     return opcion
+
+
+def obtener_diccionario_por_valor(elementos: list, 
+                                  llave_a_evaluar: str, valor_a_evaluar: str) -> dict:
+
+    indice: int = int()
+    flag_se_encontro_elemento: bool = False
+    elemento_coincidente: dict = dict()
+
+    while not flag_se_encontro_elemento and indice < len(elementos):
+
+        if elementos[indice].get(llave_a_evaluar, str()) == valor_a_evaluar:
+            elemento_coincidente = elementos[indice]
+            flag_se_encontro_elemento = True
+
+        else:
+            indice += 1
+
+    return elemento_coincidente
+
+
+def obtener_valores_repetidos(primer_lista_de_elementos: list, 
+                              segunda_lista_de_elementos: list) -> list:
+
+    elementos_vistos: list = list()
+    elementos_repetidos: list = list()
+
+    for lista_de_elementos in [primer_lista_de_elementos, segunda_lista_de_elementos]:
+        for elemento in set(lista_de_elementos):
+            if elemento in elementos_vistos:
+                elementos_repetidos.append(elemento)
+            else:
+                elementos_vistos.append(elemento)
+
+    return elementos_repetidos
+
+
+def filtrar_elementos_no_repetidos(elementos_a_copiar: list, 
+                                   elementos_a_comparar: list) -> list:
+
+    elementos_filtrados: list = deepcopy(elementos_a_copiar)
+
+    for i in range(len(elementos_filtrados) - 1, -1, -1):
+        nombre_a_filtrar: str = elementos_filtrados[i].get('nombre', str()).lower()
+        artista_a_filtrar: str = elementos_filtrados[i].get('artista', str()).lower()
+
+        for elemento_a_comparar in elementos_a_comparar:
+            nombre_a_comparar: str = elemento_a_comparar.get('nombre', str()).lower()
+            artista_a_comparar: str = elemento_a_comparar.get('artista', str()).lower()
+
+            if nombre_a_filtrar == nombre_a_comparar:
+
+                if artista_a_filtrar == artista_a_comparar:
+                    del elementos_filtrados[i]
+
+                elif (artista_a_filtrar in artista_a_comparar or 
+                      artista_a_comparar in artista_a_filtrar):
+                    del elementos_filtrados[i]
+
+            elif (nombre_a_filtrar in nombre_a_comparar or
+                  nombre_a_comparar in nombre_a_filtrar):
+
+                if artista_a_filtrar == artista_a_comparar:
+                    del elementos_filtrados[i]
+
+                elif (artista_a_filtrar in artista_a_comparar or 
+                      artista_a_comparar in artista_a_filtrar):
+                    del elementos_filtrados[i]
+
+    return elementos_filtrados
 
 
 def eliminar_archivo(ruta_de_archivo: str) -> None:
@@ -548,6 +619,69 @@ def exportar_playlist(servicio_de_spotify: Spotify, usuario: dict,
             print(f"\n¡La playlist '{nombre_de_playlist_a_exportar}', ya existe en Spotify")     
 
 
+def sincronizar_playlist_de_youtube(servicio: Resource, 
+                                    elementos_a_sincronizar: list, id_playlist: str) -> None:
+
+    exportar_playlist_a_csv(elementos_a_sincronizar, 'data\\sync_youtube.csv')
+
+    videos_a_agregar: list = list()
+    items_de_playlist: list = procesar_archivo_csv('data\\sync_youtube.csv')
+    se_sincronizaron_todos_los_elementos: bool = False
+
+    for item in items_de_playlist:
+        canciones_encontradas: list = youtube.buscar_video(
+            servicio, 
+            f'{item.get("nombre_de_cancion", str())} {item.get("artista", str())}'
+        )
+
+        videos_a_agregar.append(canciones_encontradas[0])
+
+    se_sincronizaron_todos_los_elementos = youtube.agregar_elementos_a_playlist(
+        servicio, 
+        id_playlist, 
+        videos_a_agregar
+    )
+
+    if se_sincronizaron_todos_los_elementos:
+        print('\n¡Se sincronizó satisfactoriamente la playlist de YouTube!\n')
+
+    else:
+        print('\n¡Hubo un error y no se sincronizó la playlist a YouTube!\n')
+
+
+def sincronizar_playlist_de_spotify(servicio: Spotify, 
+                                    elementos_a_sincronizar: list, id_playlist: str) -> None:
+
+    exportar_playlist_a_csv(elementos_a_sincronizar, 'data\\sync_spotify.csv')
+
+    canciones_a_agregar: list = list()
+    uris_de_canciones: list = list()
+    items_de_playlist: list = procesar_archivo_csv('data\\sync_spotify.csv')
+    se_sincronizaron_todos_los_elementos: bool = False
+
+    for item in items_de_playlist:
+        canciones_encontradas: list = spotify.buscar_cancion(
+            servicio, 
+            f'{item.get("nombre_de_cancion", str())} {item.get("artista", str())}'
+        )
+
+        canciones_a_agregar.append(canciones_encontradas[0])
+
+    uris_de_canciones = [x.get('uri', str()) for x in canciones_a_agregar]
+
+    se_sincronizaron_todos_los_elementos = spotify.agregar_canciones_a_playlist(
+        servicio,
+        id_playlist,
+        uris_de_canciones
+    )
+
+    if se_sincronizaron_todos_los_elementos:
+        print('\n¡Se sincronizó satisfactoriamente la playlist de Spotify!\n')
+
+    else:
+        print('\n¡Hubo un error y no se sincronizó la playlist a Spotify!\n')
+
+
 def iniciar_menu_de_spotify() -> None:
 
     opciones: list = [
@@ -661,12 +795,99 @@ def iniciar_menu_de_youtube() -> None:
         opcion = int(obtener_entrada_usuario(opciones))    
 
 
+def sincronizar_playlist() -> None:
+
+    servicio_de_spotify: Spotify = spotify.obtener_servicio()
+    usuario: dict = spotify.obtener_usuario_actual(servicio_de_spotify)
+    servicio_de_youtube: Resource = youtube.obtener_servicio()
+
+    playlists_existentes_en_ambas_plataformas: list = list()
+    playlists_de_spotify: list = spotify.obtener_playlists(
+        servicio_de_spotify, 
+        usuario.get('id', str())
+    )
+    playlists_de_youtube: list = youtube.obtener_playlists(servicio_de_youtube)
+    opcion_de_playlist: int = int()
+    nombre_de_playlist_a_sincronizar: str = str()
+
+    playlists_existentes_en_ambas_plataformas = obtener_valores_repetidos(
+        [x.get('nombre', str()) for x in playlists_de_spotify],
+        [x.get('nombre', str()) for x in playlists_de_youtube]
+    )
+
+    if playlists_existentes_en_ambas_plataformas:
+
+        playlist_de_spotify: dict() = dict()
+        playlist_de_youtube: dict() = dict()
+        elementos_de_playlist_de_spotify: list = list()
+        elementos_de_playlist_de_youtube: list = list()
+        elementos_que_no_existen_en_playlist_de_spotify: list = list()
+        elementos_que_no_existen_en_playlist_de_youtube: list = list()
+
+        opcion_de_playlist = int(obtener_entrada_usuario(playlists_existentes_en_ambas_plataformas)) - 1
+        nombre_de_playlist_a_sincronizar = playlists_existentes_en_ambas_plataformas[opcion_de_playlist]
+
+        playlist_de_spotify = obtener_diccionario_por_valor(
+            playlists_de_spotify, 
+            'nombre', 
+            nombre_de_playlist_a_sincronizar
+        )
+        playlist_de_youtube = obtener_diccionario_por_valor(
+            playlists_de_youtube, 
+            'nombre', 
+            nombre_de_playlist_a_sincronizar
+        )
+
+        elementos_de_playlist_de_spotify = spotify.obtener_playlist(
+            servicio_de_spotify, 
+            playlist_de_spotify.get('id', str())
+        )
+        elementos_de_playlist_de_youtube = youtube.obtener_playlist(
+            servicio_de_youtube,
+            playlist_de_youtube.get('id', str())
+        )
+
+        for item in elementos_de_playlist_de_spotify:
+            item['nombre_de_cancion'] = normalizar_nombre_de_cancion(item.get('nombre_de_cancion', str()))
+            item['nombre_de_playlist'] = playlist_de_spotify.get('nombre', str())
+            item['descripcion_de_playlist'] = playlist_de_spotify.get('descripcion', str())
+
+        for item in elementos_de_playlist_de_youtube:
+            item['nombre_de_cancion'] = normalizar_nombre_de_cancion(item.get('nombre_de_cancion', str()))
+            item['nombre_de_playlist'] = playlist_de_youtube.get('nombre', str())
+            item['descripcion_de_playlist'] = playlist_de_youtube.get('descripcion', str())              
+
+        elementos_que_no_existen_en_playlist_de_spotify = filtrar_elementos_no_repetidos(
+            elementos_de_playlist_de_youtube,
+            elementos_de_playlist_de_spotify
+        )
+        elementos_que_no_existen_en_playlist_de_youtube = filtrar_elementos_no_repetidos(
+            elementos_de_playlist_de_spotify,
+            elementos_de_playlist_de_youtube
+        )
+
+        sincronizar_playlist_de_spotify(
+            servicio_de_spotify, 
+            elementos_que_no_existen_en_playlist_de_spotify, 
+            playlist_de_spotify.get('id', str())
+        )
+        sincronizar_playlist_de_youtube(
+            servicio_de_youtube, 
+            elementos_que_no_existen_en_playlist_de_youtube, 
+            playlist_de_youtube.get('id', str())
+        )        
+
+    else:
+        print('\n¡No existen playlists que existan en ambas plataformas')
+
+
 def main() -> None:
 
     opciones: list = [
         'Spotify',
         'Youtube',
         'Cerrar sesiones',
+        'Sincronizar playlist',
         'Salir'
     ]
 
@@ -674,7 +895,7 @@ def main() -> None:
 
     opcion: int = int(obtener_entrada_usuario(opciones))
 
-    while opcion != 4:
+    while opcion != 5:
 
         if opcion == 1:
             iniciar_menu_de_spotify()
@@ -685,6 +906,9 @@ def main() -> None:
         elif opcion == 3:
             eliminar_archivo(spotify.ARCHIVO_TEKORE)
             eliminar_archivo(youtube.ARCHIVO_TOKEN)        
+
+        elif opcion == 4:
+            sincronizar_playlist()
 
         print('\n######## Menú Principal ########')
 
