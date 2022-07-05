@@ -1025,7 +1025,7 @@ def sincronizar_playlist() -> None:
         )        
 
     else:
-        print('\n¡No existen playlists que existan en ambas plataformas')
+        print('\n¡No existen playlists que existan en ambas plataformas!')
 
 
 def main() -> None:
